@@ -23,6 +23,7 @@ Use these steps to write new scenarios. No TypeScript or Python needed.
 | `Then the file should appear in the record's file list` | @ui @api | |
 | `And an audit event "{event}" should exist for the file` | @api | e.g. UPLOAD_COMPLETED |
 | `And I have a record with an uploaded file` | @api | Creates [E2E] record + uploads sample.pdf |
+| `When I try to upload a file to officer1's record` | @api | Tests cross-user upload (403 expected) |
 
 ## File Lock
 | Step | Layer | Levels |
@@ -51,6 +52,15 @@ Use these steps to write new scenarios. No TypeScript or Python needed.
 | `When I set the retention period for my agency to {n} days` | @api | |
 | `Then the retention policy should be saved` | @api | |
 | `When I try to set a retention policy` | @api | |
+
+## Audit & Chain of Custody
+| Step | Layer | Notes |
+|---|---|---|
+| `And a file has upload, view, and download events` | @api | Creates setup state: record + file + 3 audit events |
+| `When I export the chain of custody for that file` | @api | |
+| `Then the export should contain all audit events in order` | @api | Asserts events ordered by timestamp |
+| `And each event should include the actor's name and timestamp` | @api | |
+| `When I try to access the audit log` | @api | Tests unauthorized access (403 expected) |
 
 ## Errors
 | Step | Layer |
