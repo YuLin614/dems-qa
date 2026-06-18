@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.auth/
+.env
+
+# Playwright
+playwright-report/
+test-results/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
