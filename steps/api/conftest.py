@@ -15,7 +15,7 @@ BACKEND_URL  = os.environ["BACKEND_URL"]
 
 def fetch_token(username: str, password: str) -> str:
     resp = httpx.post(
-        f"{KEYCLOAK_URL}/realms/{REALM}/protocol/openid-connect/token",
+        f"{KEYCLOAK_URL}/oidc/realms/{REALM}/protocol/openid-connect/token",
         data={"client_id": CLIENT_ID, "grant_type": "password",
               "username": username, "password": password},
         timeout=10,
