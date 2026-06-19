@@ -96,16 +96,24 @@ Then('the file detail view should be visible', async function ({ page }) {
   await page.locator('dialog, [role="dialog"]').first().waitFor({ timeout: 5_000 }).catch(() => null);
 });
 
-// Download file — click ... menu → Download → fill reason → confirm
-When('I download the file with reason {string}', async function ({ page }, reason: string) {
-  // Open the ... dropdown in the file viewer header
-  // INSPECT: update selector after confirming the more-options button in the file viewer
-  const moreBtn = page.locator(
-    'button:has([data-lucide="ellipsis"]), button:has([data-lucide="more-horizontal"]), ' +
-    'button[aria-label*="more" i], button[aria-label*="option" i], button[aria-label*="actions" i]'
-  ).first();
+// Helper: open the ... (more actions) dropdown in the file viewer header
+async function openMoreMenu(page: import('@playwright/test').Page) {
+  // The file viewer header has 3 buttons: sidebar-toggle | ... | close
+  // Target the ... button which is second-to-last in the dialog
+  const dialog = page.locator('[role="dialog"]');
+  const btns = dialog.locator('button:visible');
+  const count = await btns.count();
+  // More actions is before the close button
+  const moreBtn = count >= 2 ? btns.nth(count - 2) : btns.first();
   await moreBtn.waitFor({ timeout: 5_000 });
   await moreBtn.click();
+  // Wait for dropdown menu to appear
+  await page.locator('[role="menuitem"]').first().waitFor({ timeout: 5_000 });
+}
+
+// Download file — click ... menu → Download → fill reason → confirm
+When('I download the file with reason {string}', async function ({ page }, reason: string) {
+  await openMoreMenu(page);
 
   // Click Download in the dropdown
   await page.getByRole('menuitem', { name: /download/i }).first().click();
@@ -132,13 +140,7 @@ Then('the download should be initiated', async function ({ page }) {
 
 // Lock file — click ... menu → Restrict → pick level → fill reason → confirm
 When('I lock the file as {string} with reason {string}', async function ({ page }, level: string, reason: string) {
-  // Open the ... dropdown
-  const moreBtn = page.locator(
-    'button:has([data-lucide="ellipsis"]), button:has([data-lucide="more-horizontal"]), ' +
-    'button[aria-label*="more" i], button[aria-label*="option" i], button[aria-label*="actions" i]'
-  ).first();
-  await moreBtn.waitFor({ timeout: 5_000 });
-  await moreBtn.click();
+  await openMoreMenu(page);
 
   // Click Restrict / Manage Restriction
   await page.getByRole('menuitem', { name: /restrict/i }).first().click();
