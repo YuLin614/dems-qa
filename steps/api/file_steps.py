@@ -182,3 +182,60 @@ def switch_user(context, officer_token, officer2_token, sergeant_token,
         raise ValueError(f"Unknown role: {role!r}. Valid roles: {list(token_map)}")
     context['token'] = token
     context['client'] = api_client(token)
+
+
+# ---------------------------------------------------------------------------
+# File-lock scenarios
+# ---------------------------------------------------------------------------
+scenarios('../../features/evidence/file-lock.feature')
+
+
+@when(parsers.parse('I set the file lock to "{lock_level}"'))
+def set_file_lock(context, lock_level):
+    # VERIFY: confirm PATCH /records/{id}/files/{file_id} is the correct endpoint
+    # VERIFY: confirm the request body field name is 'lock' (may differ in record-service)
+    resp = context['client'].patch(
+        f"/records/{context['record_id']}/files/{context['file_id']}",
+        json={'lock': lock_level},
+    )
+    assert resp.status_code in (200, 204), \
+        f"Expected 200/204 setting lock, got {resp.status_code}: {resp.text}"
+
+
+@then(parsers.parse('the file should not be visible to "{role}"'))
+def file_not_visible_to(context, officer2_token, role):
+    role_token = {'officer2': officer2_token}.get(role)
+    if not role_token:
+        raise ValueError(f"Role {role!r} not mapped to a token fixture")
+    other_client = api_client(role_token)
+    # VERIFY: confirm GET /records/{id}/files/{file_id} returns 403 or 404 for locked files
+    resp = other_client.get(
+        f"/records/{context['record_id']}/files/{context['file_id']}"
+    )
+    assert resp.status_code in (403, 404), \
+        f"Expected 403/404 for {role}, got {resp.status_code}: {resp.text}"
+
+
+@then(parsers.parse('the file should be visible to "{role}"'))
+def file_visible_to(context, sergeant_token, role):
+    role_token = {'sergeant1': sergeant_token}.get(role)
+    if not role_token:
+        raise ValueError(f"Role {role!r} not mapped — add to fixture map if needed")
+    other_client = api_client(role_token)
+    # VERIFY: confirm GET /records/{id}/files/{file_id} returns 200 for supervisor roles
+    resp = other_client.get(
+        f"/records/{context['record_id']}/files/{context['file_id']}"
+    )
+    assert resp.status_code == 200, \
+        f"Expected 200 for {role}, got {resp.status_code}: {resp.text}"
+
+
+@then('I should be able to see the file')
+def can_see_file(context):
+    # Uses context['client'] — already switched to iauser via 'I switch to user' step
+    # VERIFY: confirm GET /records/{id}/files/{file_id} returns 200 for iauser on locked files
+    resp = context['client'].get(
+        f"/records/{context['record_id']}/files/{context['file_id']}"
+    )
+    assert resp.status_code == 200, \
+        f"Expected 200, got {resp.status_code}: {resp.text}"
