@@ -115,8 +115,8 @@ async function openMoreMenu(page: import('@playwright/test').Page) {
 When('I download the file with reason {string}', async function ({ page }, reason: string) {
   await openMoreMenu(page);
 
-  // Click Download in the dropdown — use text match (more reliable than role)
-  await page.getByText('Download').first().click();
+  // Click Download in the dropdown — filter menuitem by text
+  await page.locator('[role="menuitem"]').filter({ hasText: 'Download' }).first().click();
 
   // Download dialog may not appear if file is still PROCESSING — soft check
   const reasonInput = page.locator('textarea[name="reason"], textarea[id*="reason"], textarea[id*="download"]').first();
@@ -169,15 +169,16 @@ When('I lock the file as {string} with reason {string}', async function ({ page 
   ).catch(() => null);
 });
 
-// Assert lock badge is visible — check modal header breadcrumb OR sidebar lock status
+// Assert lock badge is visible — check modal header OR sidebar lock status
 Then('the file should show a lock badge', async function ({ page }) {
-  // The modal header shows a "Private" or "Invisible" badge in the breadcrumb
-  // Also visible in sidebar as Lock Status
-  const badge = page.locator(
-    '[data-testid="lock-badge-private"], [data-testid="lock-badge-invisible"], ' +
-    'text=Private, text=Invisible'
-  ).first();
-  await badge.waitFor({ timeout: 10_000 });
+  // Try data-testid badge first, then fall back to text in modal header/sidebar
+  const badge = page.locator('[data-testid="lock-badge-private"], [data-testid="lock-badge-invisible"]');
+  const hasDataBadge = await badge.first().isVisible({ timeout: 3_000 }).catch(() => false);
+  if (!hasDataBadge) {
+    // The modal header shows "Private" or "Invisible" text badge
+    await page.getByText('Private').or(page.getByText('Invisible')).first()
+      .waitFor({ timeout: 7_000 });
+  }
 });
 
 // Open audit/shared tab in file viewer sidebar
