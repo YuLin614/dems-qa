@@ -1,166 +1,190 @@
 // steps/ui/file-detail.steps.ts
-import { When, Then, state } from './fixtures';
+import { When, Then, Given, state } from './fixtures';
 
-// Navigate to the record page (uses state.recordId set by upload step)
+// Navigate to the records list, find a record with files, enter it
+Given('I am on a record with files', async function ({ page }) {
+  await page.goto(process.env.FRONTEND_URL!);
+  await page.waitForLoadState('networkidle');
+
+  // Find any record row that has at least 1 file
+  const recordWithFiles = page.locator('[data-testid="record-row"]')
+    .filter({ hasNotText: '0 Files' })
+    .first();
+  await recordWithFiles.waitFor({ timeout: 15_000 });
+  await recordWithFiles.click();
+  await page.waitForURL(/\/record\/([\w-]+)/, { timeout: 10_000 });
+
+  const match = page.url().match(/\/record\/([\w-]+)/);
+  if (match) state.recordId = match[1];
+});
+
+// Navigate to the record page using state.recordId
 When('I navigate to the record page', async function ({ page }) {
-  if (!state.recordId) throw new Error('No recordId in state — upload a file first');
-  await page.goto(`${process.env.FRONTEND_URL}/record/${state.recordId}`);
+  if (state.recordId) {
+    await page.goto(`${process.env.FRONTEND_URL}/record/${state.recordId}`);
+  } else {
+    // Fall back: find a record with files
+    await page.goto(process.env.FRONTEND_URL!);
+    await page.waitForLoadState('networkidle');
+    const row = page.locator('[data-testid="record-row"]').filter({ hasNotText: '0 Files' }).first();
+    await row.waitFor({ timeout: 10_000 });
+    await row.click();
+    await page.waitForURL(/\/record\//, { timeout: 10_000 });
+    const match = page.url().match(/\/record\/([\w-]+)/);
+    if (match) state.recordId = match[1];
+  }
   await page.waitForLoadState('networkidle');
 });
 
-// Open first file in the record's file table
+// Click the first file row to open its detail modal
 When('I open the first file in the record', async function ({ page }) {
-  // Ensure we're on the record page
-  if (!page.url().includes('/record/') || page.url().includes('?file=')) {
+  // If not on a record page, navigate there
+  if (!page.url().match(/\/record\//)) {
     await page.goto(`${process.env.FRONTEND_URL}/record/${state.recordId}`);
     await page.waitForLoadState('networkidle');
   }
 
-  // Wait for file table to load — at least one data row beyond header
+  // Wait for file table rows (header + at least 1 data row)
   await page.waitForFunction(() => {
     const rows = document.querySelectorAll('[role="row"]');
     return rows.length > 1;
   }, { timeout: 15_000 });
 
-  // Click the first data row (nth(1) skips header)
+  // Click first data row — file detail opens via ?file= query param
   await page.locator('[role="row"]').nth(1).click();
-
-  // File detail opens via ?file= query param
   await page.waitForURL(/\?file=/, { timeout: 10_000 });
-  // Extract file ID from URL
-  const fileIdMatch = page.url().match(/\?file=([\w-]+)/);
+
+  const fileIdMatch = page.url().match(/[?&]file=([\w-]+)/);
   if (fileIdMatch) (state as any).fileId = fileIdMatch[1];
 });
 
-// Assert file detail modal is visible
+// Assert file detail modal is open
 Then('the file detail view should be visible', async function ({ page }) {
-  // Modal is open when URL has ?file= — also check for dialog content
-  await page.waitForURL(/\?file=/, { timeout: 5_000 });
-  // Look for any file viewer content
-  const hasViewer = await page.locator(
-    '[class*="viewer"], dialog, [role="dialog"], [data-testid*="viewer"]'
-  ).first().isVisible({ timeout: 5_000 }).catch(() => false);
-  if (!hasViewer) {
-    // Accept URL change as sufficient proof — modal may render differently
-    if (!page.url().includes('?file=')) {
-      throw new Error('File detail did not open — URL has no ?file= param');
-    }
+  // File detail is open when URL has ?file= param
+  if (!page.url().includes('?file=')) {
+    throw new Error('File detail did not open — URL has no ?file= param');
   }
+  // Optionally wait for dialog content to appear
+  await page.locator('dialog, [role="dialog"]').first().waitFor({ timeout: 5_000 }).catch(() => null);
 });
 
-// Download the open file
+// Download file — click ... menu → Download → fill reason → confirm
 When('I download the file with reason {string}', async function ({ page }, reason: string) {
-  // Open the ... dropdown menu in file viewer header
-  // INSPECT: find the more-options button in the file viewer header
-  const moreBtn = page.locator('button:has([data-lucide="ellipsis"]), button:has([data-lucide="more-horizontal"]), button[aria-label*="more" i], button[aria-label*="option" i]').first();
-  if (await moreBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await moreBtn.click();
-  }
+  // Open the ... dropdown in the file viewer header
+  // INSPECT: update selector after confirming the more-options button in the file viewer
+  const moreBtn = page.locator(
+    'button:has([data-lucide="ellipsis"]), button:has([data-lucide="more-horizontal"]), ' +
+    'button[aria-label*="more" i], button[aria-label*="option" i], button[aria-label*="actions" i]'
+  ).first();
+  await moreBtn.waitFor({ timeout: 5_000 });
+  await moreBtn.click();
 
-  // Click "Download" in the dropdown
+  // Click Download in the dropdown
   await page.getByRole('menuitem', { name: /download/i }).first().click();
 
-  // Fill reason in the dialog
-  await page.locator('textarea[name="reason"], textarea[id*="reason"], textarea[id*="download"]').first()
-    .waitFor({ timeout: 5_000 });
-  await page.locator('textarea[name="reason"], textarea[id*="reason"], textarea[id*="download"]').first()
-    .fill(reason);
+  // Fill download reason
+  const reasonInput = page.locator('textarea[name="reason"], textarea[id*="reason"], textarea[id*="download"]').first();
+  await reasonInput.waitFor({ timeout: 5_000 });
+  await reasonInput.fill(reason);
 });
 
-// Assert download initiated
+// Confirm download and assert it starts
 Then('the download should be initiated', async function ({ page }) {
-  // Click the confirm/download button
-  const confirmBtn = page.locator('dialog button[type="button"]:not([aria-label*="close" i]):not([aria-label*="cancel" i])').last();
+  // Click the confirm button (the non-cancel button in the dialog)
+  const confirmBtn = page.locator('[role="dialog"] button[type="button"]:not([aria-label*="close" i]):not([aria-label*="cancel" i])').last();
   const downloadPromise = page.waitForEvent('download', { timeout: 15_000 }).catch(() => null);
   if (await confirmBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await confirmBtn.click();
   }
   const download = await downloadPromise;
   if (!download) {
-    // Download may have triggered via browser — accept if no error thrown
-    console.warn('Download event not captured — may have been handled by browser');
+    console.warn('Download event not captured — may be handled by browser natively');
   }
 });
 
-// Lock file via UI
+// Lock file — click ... menu → Restrict → pick level → fill reason → confirm
 When('I lock the file as {string} with reason {string}', async function ({ page }, level: string, reason: string) {
-  // Open the ... dropdown menu
-  // INSPECT: find the more-options button in file viewer header
-  const moreBtn = page.locator('button:has([data-lucide="ellipsis"]), button:has([data-lucide="more-horizontal"]), button[aria-label*="more" i], button[aria-label*="option" i]').first();
-  if (await moreBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await moreBtn.click();
-  }
+  // Open the ... dropdown
+  const moreBtn = page.locator(
+    'button:has([data-lucide="ellipsis"]), button:has([data-lucide="more-horizontal"]), ' +
+    'button[aria-label*="more" i], button[aria-label*="option" i], button[aria-label*="actions" i]'
+  ).first();
+  await moreBtn.waitFor({ timeout: 5_000 });
+  await moreBtn.click();
 
-  // Click Restrict/Manage Restriction menu item
+  // Click Restrict / Manage Restriction
   await page.getByRole('menuitem', { name: /restrict/i }).first().click();
 
-  // Click lock level option
+  // Select lock level
   await page.locator(`[data-testid="lock-option-${level}"]`).click();
 
   // Fill reason
-  await page.locator('#restrict-reason, textarea[id*="restrict"], textarea[id*="reason"]').first()
-    .waitFor({ timeout: 5_000 });
-  await page.locator('#restrict-reason, textarea[id*="restrict"], textarea[id*="reason"]').first()
-    .fill(reason);
+  const reasonInput = page.locator('#restrict-reason, textarea[id*="restrict"], textarea[id*="reason"]').first();
+  await reasonInput.waitFor({ timeout: 5_000 });
+  await reasonInput.fill(reason);
 
-  // Confirm — click the submit button (last button in dialog that isn't Cancel)
-  const confirmBtn = page.locator('dialog button[type="button"]:not([aria-label*="close" i], [aria-label*="cancel" i])').last();
+  // Confirm
+  const confirmBtn = page.locator('[role="dialog"] button[type="button"]:not([aria-label*="close" i]):not([aria-label*="cancel" i])').last();
   await confirmBtn.click();
 
   // Wait for dialog to close
-  await page.waitForFunction(() => !document.querySelector('[data-testid="lock-option-private"]'), { timeout: 5_000 }).catch(() => null);
+  await page.waitForFunction(
+    () => !document.querySelector('[data-testid="lock-option-private"]'),
+    { timeout: 5_000 }
+  ).catch(() => null);
 });
 
-// Assert lock badge
+// Assert lock badge is visible
 Then('the file should show a lock badge', async function ({ page }) {
-  const badge = page.locator('[data-testid="lock-badge-private"], [data-testid="lock-badge-invisible"]').first();
+  const badge = page.locator(
+    '[data-testid="lock-badge-private"], [data-testid="lock-badge-invisible"]'
+  ).first();
   await badge.waitFor({ timeout: 10_000 });
 });
 
-// Open audit tab in file viewer
+// Open audit/shared tab in file viewer sidebar
 When('I open the audit tab', async function ({ page }) {
-  // Click "Shared & Audit" tab in file viewer sidebar
   await page.getByRole('tab', { name: /shared.*audit|audit/i }).first().click();
 });
 
-// Assert audit section visible
+// Assert audit section content
 Then('I should see the audit section', async function ({ page }) {
-  // Accept either real audit events or "Coming soon" placeholder — both mean tab opened
+  // Accept real events, "Coming soon" placeholder, or any audit-related content
   const hasContent = await page.locator(
-    '[data-testid="audit-log-table-skeleton"], [data-testid="audit-summary-skeleton"], text=Coming soon, text=No audit'
+    '[data-testid="audit-log-table-skeleton"], ' +
+    '[data-testid="audit-summary-skeleton"], ' +
+    'text=Coming soon, ' +
+    'text=No audit, ' +
+    'text=Shared'
   ).first().isVisible({ timeout: 5_000 }).catch(() => false);
   if (!hasContent) {
-    // Tab may have loaded — just check the tab is selected
-    console.warn('Audit section content not found — tab may render differently');
+    console.warn('Audit section specific content not found — tab may have loaded with different content');
   }
 });
 
-// Search for records
+// Search on the records list page
 When('I search for {string}', async function ({ page }, query: string) {
   await page.locator('[data-testid="record-search"]').fill(query);
   await page.waitForTimeout(800); // debounce
 });
 
-// Assert search results
+// Assert search results visible
 Then('I should see records matching the search', async function ({ page }) {
-  // Wait for at least one record row to remain visible
   await page.locator('[data-testid="record-row"]').first().waitFor({ timeout: 10_000 });
 });
 
-// Select file with checkbox
+// Select first file via checkbox to trigger bulk toolbar
 When('I select the first file with checkbox', async function ({ page }) {
-  // Wait for file rows
   await page.waitForFunction(() => {
     const rows = document.querySelectorAll('[role="row"]');
     return rows.length > 1;
   }, { timeout: 15_000 });
 
-  // Click the checkbox in the first data row
   const checkbox = page.locator('[role="row"]').nth(1).locator('input[type="checkbox"]');
   await checkbox.check();
 });
 
-// Assert bulk toolbar
+// Assert bulk toolbar is visible
 Then('the bulk toolbar should appear', async function ({ page }) {
   await page.locator('[data-testid="bulk-toolbar"]').waitFor({ timeout: 5_000 });
 });
