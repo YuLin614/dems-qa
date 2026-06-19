@@ -42,7 +42,8 @@ def export_chain_of_custody(context):
     # RESOLVED: actual endpoint confirmed from source
     # Returns a PDF (Content-Type: application/pdf), NOT JSON
     resp = context['client'].get(
-        f"/api/v1/audit/chain-of-custody/files/{context['file_id']}/export"
+        f"/api/v1/audit/chain-of-custody/files/{context['file_id']}/export",
+        params={"format": "pdf"},
     )
     assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
     assert resp.headers.get('content-type', '').startswith('application/pdf'), \
