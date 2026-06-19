@@ -1,6 +1,6 @@
 # steps/api/audit_steps.py
 import os
-from pytest_bdd import scenarios, given, when, then, parsers
+from pytest_bdd import scenarios, given, when, then
 
 from conftest import api_client
 
