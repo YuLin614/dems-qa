@@ -98,17 +98,17 @@ Then('the file detail view should be visible', async function ({ page }) {
 
 // Helper: open the ... (more actions) dropdown in the file viewer header
 async function openMoreMenu(page: import('@playwright/test').Page) {
-  // The file viewer header has 3 buttons: sidebar-toggle | ... | close
-  // Target the ... button which is second-to-last in the dialog
-  const dialog = page.locator('[role="dialog"]');
-  const btns = dialog.locator('button:visible');
-  const count = await btns.count();
-  // More actions is before the close button
-  const moreBtn = count >= 2 ? btns.nth(count - 2) : btns.first();
+  // Lucide renders MoreHorizontal as SVG with class "lucide lucide-more-horizontal"
+  // or Ellipsis as "lucide lucide-ellipsis" — find button containing either
+  const moreBtn = page.locator(
+    'button:has(svg[class*="more-horizontal"]), button:has(svg[class*="ellipsis"]), ' +
+    'button:has(svg[class*="more-vertical"])'
+  ).first();
   await moreBtn.waitFor({ timeout: 5_000 });
   await moreBtn.click();
-  // Wait for dropdown menu to appear
-  await page.locator('[role="menuitem"]').first().waitFor({ timeout: 5_000 });
+  // Radix DropdownMenu renders items into a portal — wait for any menuitem
+  await page.locator('[role="menuitem"], [data-radix-popper-content-wrapper] button').first()
+    .waitFor({ timeout: 5_000 });
 }
 
 // Download file — click ... menu → Download → fill reason → confirm
