@@ -69,15 +69,14 @@ When('I open the first file in the record', async function ({ page }) {
   // Also wait for the file table search input which confirms the file table is mounted
   await page.locator('[data-testid="file-table:search-input"]').waitFor({ timeout: 10_000 }).catch(() => null);
 
-  // Click the first file row: use the Captured date text as a reliable click target
-  // (checkboxes and buttons are excluded from row-click in the data-table component)
-  // Click on the thumbnail image area which is inside the row
-  const clickTarget = page.locator('table img, [class*="thumbnail"] img, img[src*="thumbnail"]').first();
-  if (await clickTarget.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await clickTarget.click();
+  // Click the first file row by clicking on its thumbnail mock element or date text
+  // (checkboxes, links, buttons are excluded from row-click per data-table source)
+  const thumbnail = page.locator('[data-testid*="thumbnail-mock"], [data-testid*="thumbnail-fallback"]').first();
+  if (await thumbnail.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await thumbnail.click();
   } else {
-    // Fallback: click anywhere in the table body that isn't a checkbox/button
-    await page.locator('table tbody tr, [data-index="0"]').first().click();
+    // Fallback: click the Captured date text (always present, never a link/button)
+    await page.locator('text=/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/').first().click();
   }
 
   // File detail opens via ?file= query param
