@@ -15,9 +15,9 @@ def create_record(context, title):
 
 
 @when(parsers.parse('I upload the file "{filename}"'))
-def upload_file(context, filename):
-    # COMPLEX: TUS upload — see file_steps.py for implementation
-    raise NotImplementedError("TUS upload not yet implemented — see record_file_controller.py line 153")
+def upload_file_step(context, filename):
+    from upload_helper import upload_file as _upload
+    context['file_id'] = _upload(context['client'], context['record_id'], filename)
 
 
 @then("the file should appear in the record's file list")
@@ -32,10 +32,11 @@ def file_in_list(context):
 
 @then(parsers.parse('an audit event "{event_type}" should exist for the file'))
 def audit_event_exists(context, event_type):
-    # RESOLVED: actual endpoint confirmed from source
     resp = context['client'].get(
-        f"/api/v1/audit/logs?file_id={context['file_id']}"
+        '/api/v1/audit/logs',
+        params={'file_id': context['file_id']},
     )
-    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
-    types = [e['event_type'] for e in resp.json().get('items', [])]
+    assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
+    items = resp.json().get('items', [])
+    types = [e.get('event_type') for e in items]
     assert event_type in types, f"Expected {event_type!r} in {types}"

@@ -9,8 +9,12 @@ from conftest import api_client
 
 @when(parsers.parse('I try to upload the file "{filename}"'))
 def try_upload_file(context, filename):
-    # COMPLEX: TUS upload — see file_steps.py for implementation
-    raise NotImplementedError("TUS upload not yet implemented — see record_file_controller.py line 153")
+    # Step 1: Try to create file resource — extension should be rejected here
+    r1 = context['client'].post('/api/v1/records/files', json={
+        'filename': filename,
+        'record_id': context['record_id'],
+    })
+    context['last_response'] = r1
 
 
 @then('I should see an error about unsupported file type')
@@ -32,8 +36,12 @@ def try_upload_cross_user(context, officer_token):
     assert r.status_code == 201, f"Setup failed creating officer1 record: {r.text}"
     officer1_record_id = r.json()['id']
 
-    # COMPLEX: TUS upload — see file_steps.py for implementation
-    raise NotImplementedError("TUS upload not yet implemented — see record_file_controller.py line 153")
+    # Try to create file resource on officer1's record as officer2
+    resp = context['client'].post('/api/v1/records/files', json={
+        'filename': 'sample.pdf',
+        'record_id': officer1_record_id,
+    })
+    context['last_response'] = resp
 
 # NOTE: @then('I should receive a 403 error') is defined in conftest.py
 # and is available to all test files automatically — do NOT redefine it here.
@@ -55,9 +63,8 @@ def have_record_with_file(context, officer_token):
     assert r.status_code == 201, f"Setup failed: {r.text}"
     context['record_id'] = r.json()['id']
 
-    # COMPLEX: TUS upload — see file_steps.py for implementation
-    # context['file_id'] must be set after successful TUS upload
-    raise NotImplementedError("TUS upload not yet implemented — see record_file_controller.py line 153")
+    from upload_helper import upload_file as _upload
+    context['file_id'] = _upload(setup_client, context['record_id'], 'sample.pdf')
 
 
 @when('I create an external share link for the file')
