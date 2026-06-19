@@ -33,17 +33,33 @@ When('I upload the file {string}', async function ({ page }, filename: string) {
     await uploadBtn.click();
   }
 
-  // Wait for upload progress or modal to close (upload started)
+  // Wait for upload modal to close
   await Promise.race([
     page.waitForSelector('[data-testid="upload:batch-progress"]', { timeout: 30_000 }),
     page.waitForSelector('[data-testid="upload:header-indicator"]', { timeout: 30_000 }),
     page.waitForFunction(() => !document.querySelector('[data-testid="upload:modal"]'), { timeout: 30_000 }),
-  ]).catch(() => null); // best-effort — proceed even if indicator not found
+  ]).catch(() => null);
 
-  // Extract record ID from URL if navigated to record page after upload
-  const url = page.url();
-  const match = url.match(/\/record\/([\w-]+)/);
-  if (match) state.recordId = match[1];
+  // Capture record ID from URL if navigated to record page
+  const urlAfter = page.url();
+  const urlMatch = urlAfter.match(/\/record\/([\w-]+)/);
+  if (urlMatch) {
+    state.recordId = urlMatch[1];
+    return;
+  }
+
+  // Still on records list — find the [E2E] record we just created and click it to get the ID
+  const pendingTitle = (state as any).pendingTitle as string | undefined;
+  const rowFilter = pendingTitle
+    ? page.locator('[data-testid="record-row"]').filter({ hasText: pendingTitle.split('-')[0] }).first()
+    : page.locator('[data-testid="record-row"]').filter({ hasText: '[E2E]' }).first();
+
+  if (await rowFilter.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await rowFilter.click();
+    await page.waitForURL(/\/record\/([\w-]+)/, { timeout: 10_000 });
+    const navMatch = page.url().match(/\/record\/([\w-]+)/);
+    if (navMatch) state.recordId = navMatch[1];
+  }
 });
 
 // Setup step: create a record + upload a file via API in the background
@@ -79,7 +95,13 @@ Then('an audit event {string} should exist for the file', async function ({ page
 });
 
 Then("the file should appear in the record's file list", async function ({ page }) {
-  // If inside a record page, check for file rows
+  // Navigate directly to the record using captured ID
+  if (state.recordId && !page.url().includes(state.recordId)) {
+    await page.goto(`${process.env.FRONTEND_URL}/record/${state.recordId}`);
+    await page.waitForLoadState('networkidle');
+  }
+
+  // Now on record page — wait for file rows
   if (page.url().match(/\/record\//)) {
     await page.waitForFunction(() => {
       const rows = document.querySelectorAll('[role="row"]');
@@ -87,7 +109,8 @@ Then("the file should appear in the record's file list", async function ({ page 
     }, { timeout: 15_000 });
     return;
   }
-  // On records list: find the [E2E] record row showing at least 1 file
+
+  // Fallback: still on records list — check for [E2E] record with files
   const fileCountRow = page.locator('[data-testid="record-row"]')
     .filter({ hasText: '[E2E]' })
     .filter({ hasNotText: '0 Files' })
