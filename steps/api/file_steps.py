@@ -30,11 +30,13 @@ def error_unsupported_type(context):
 @when("I try to upload a file to officer1's record")
 def try_upload_cross_user(context, officer_token):
     # Create a record as officer1 (owner), then attempt upload as the current user (officer2)
+    import uuid as _uuid
     officer1_client = api_client(officer_token)
     # RESOLVED: actual endpoint confirmed from source
-    r = officer1_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': '[E2E] Cross-Upload Target'})
+    uid = str(_uuid.uuid4())[:8]
+    r = officer1_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': f'[E2E] Cross {uid}'})
     assert r.status_code == 201, f"Setup failed creating officer1 record: {r.text}"
-    officer1_record_id = r.json()['id']
+    officer1_record_id = r.json()['record_id']
 
     # Try to create file resource on officer1's record as officer2
     resp = context['client'].post('/api/v1/records/files', json={
@@ -57,11 +59,13 @@ scenarios('../../features/sharing/external-share.feature')
 def have_record_with_file(context, officer_token):
     # Creates an [E2E] record as officer1 and uploads sample.pdf.
     # Uses officer_token regardless of current context role — this is setup state.
+    import uuid as _uuid
     setup_client = api_client(officer_token)
     # RESOLVED: actual endpoint confirmed from source
-    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': '[E2E] Share Test Record'})
+    uid = str(_uuid.uuid4())[:8]
+    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': f'[E2E] Share {uid}'})
     assert r.status_code == 201, f"Setup failed: {r.text}"
-    context['record_id'] = r.json()['id']
+    context['record_id'] = r.json()['record_id']
 
     from upload_helper import upload_file as _upload
     context['file_id'] = _upload(setup_client, context['record_id'], 'sample.pdf')
@@ -112,14 +116,16 @@ def download_with_reason(context):
 @given('an external share link has expired')
 def create_expired_share(context, officer_token):
     # Create a record + file as officer1, then create an expired share.
+    import uuid as _uuid
     setup_client = api_client(officer_token)
     context['token'] = officer_token
     context['client'] = setup_client
 
     # RESOLVED: actual endpoint confirmed from source
-    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': '[E2E] Expiry Test'})
+    uid = str(_uuid.uuid4())[:8]
+    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': f'[E2E] Expiry {uid}'})
     assert r.status_code == 201, f"Setup failed: {r.text}"
-    context['record_id'] = r.json()['id']
+    context['record_id'] = r.json()['record_id']
 
     # COMPLEX: TUS upload — see file_steps.py for implementation
     # Share expiry test requires upload to complete first

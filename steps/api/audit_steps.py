@@ -10,15 +10,17 @@ scenarios('../../features/audit/chain-of-custody.feature')
 @given('a file has upload, view, and download events')
 def file_with_events(context, officer_token):
     # Setup: create a record, upload a file, view it, download it — generates audit events
+    import uuid as _uuid
     setup_client = api_client(officer_token)
     context['token'] = officer_token
     context['client'] = setup_client
 
     # Create record
     # RESOLVED: actual endpoint confirmed from source
-    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': '[E2E] Audit Test'})
+    uid = str(_uuid.uuid4())[:8]
+    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': f'[E2E] Audit {uid}'})
     assert r.status_code == 201, f"Setup failed: {r.text}"
-    context['record_id'] = r.json()['id']
+    context['record_id'] = r.json()['record_id']
 
     # Upload file
     from upload_helper import upload_file as _upload
