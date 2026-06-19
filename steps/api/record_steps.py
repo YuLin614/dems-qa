@@ -1,6 +1,9 @@
 # steps/api/record_steps.py
 import os
+import uuid as _uuid
 from pytest_bdd import scenarios, when, then, parsers
+
+from conftest import api_client
 
 # Bind all scenarios in upload-evidence.feature to this test module
 scenarios('../../features/evidence/upload-evidence.feature')
@@ -8,10 +11,29 @@ scenarios('../../features/evidence/upload-evidence.feature')
 
 @when(parsers.parse('I create a new evidence record titled "{title}"'))
 def create_record(context, title):
-    # RESOLVED: actual endpoint confirmed from source
-    resp = context['client'].post('/api/v1/records', json={'category': 'id', 'external_record_id': title})
+    # Append a short UUID to avoid 409 Conflict on re-runs with the same title
+    uid = str(_uuid.uuid4())[:8]
+    ext_id = f"{title}-{uid}"
+    resp = context['client'].post('/api/v1/records', json={'category': 'id', 'external_record_id': ext_id})
     assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
     context['record_id'] = resp.json()['record_id']
+
+
+@when("I try to upload a file to officer1's record")
+def try_upload_cross_user(context, officer_token):
+    # Create a record as officer1 (owner), then attempt upload as the current user (officer2)
+    officer1_client = api_client(officer_token)
+    uid = str(_uuid.uuid4())[:8]
+    r = officer1_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': f'[E2E] Cross {uid}'})
+    assert r.status_code == 201, f"Setup failed creating officer1 record: {r.text}"
+    officer1_record_id = r.json()['record_id']
+
+    # Try to create file resource on officer1's record as the current user (officer2)
+    resp = context['client'].post('/api/v1/records/files', json={
+        'filename': 'sample.pdf',
+        'record_id': officer1_record_id,
+    })
+    context['last_response'] = resp
 
 
 @when(parsers.parse('I upload the file "{filename}"'))

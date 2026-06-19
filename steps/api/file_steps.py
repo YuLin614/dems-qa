@@ -27,26 +27,10 @@ def error_unsupported_type(context):
         f"Expected file type error message in: {resp.text}"
 
 
-@when("I try to upload a file to officer1's record")
-def try_upload_cross_user(context, officer_token):
-    # Create a record as officer1 (owner), then attempt upload as the current user (officer2)
-    import uuid as _uuid
-    officer1_client = api_client(officer_token)
-    # RESOLVED: actual endpoint confirmed from source
-    uid = str(_uuid.uuid4())[:8]
-    r = officer1_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': f'[E2E] Cross {uid}'})
-    assert r.status_code == 201, f"Setup failed creating officer1 record: {r.text}"
-    officer1_record_id = r.json()['record_id']
-
-    # Try to create file resource on officer1's record as officer2
-    resp = context['client'].post('/api/v1/records/files', json={
-        'filename': 'sample.pdf',
-        'record_id': officer1_record_id,
-    })
-    context['last_response'] = resp
-
 # NOTE: @then('I should receive a 403 error') is defined in conftest.py
 # and is available to all test files automatically — do NOT redefine it here.
+# NOTE: 'I try to upload a file to officer1's record' step lives in record_steps.py
+#       (upload-evidence.feature scenarios are bound there; cross-file step lookup is unreliable).
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +66,7 @@ def create_share_link(context):
             "resource_ids": [context['file_id']],
             "recipients": [{"email": "test@example.com", "name": "E2E Test"}],
             "reason": "E2E test share",
+            "expiry": 24,
         },
     )
     assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
@@ -173,7 +158,7 @@ def set_file_lock(context, lock_level):
     # RESOLVED: actual endpoint confirmed from source
     resp = context['client'].put(
         f"/api/v1/records/{context['record_id']}/files/{context['file_id']}/lock-level",
-        json={'lock_level': lock_level},
+        json={'lock_level': lock_level, 'reason': 'E2E test lock'},
     )
     assert resp.status_code in (200, 204), \
         f"Expected 200/204 setting lock, got {resp.status_code}: {resp.text}"
@@ -185,9 +170,9 @@ def file_not_visible_to(context, officer2_token, role):
     if not role_token:
         raise ValueError(f"Role {role!r} not mapped to a token fixture")
     other_client = api_client(role_token)
-    # RESOLVED: actual endpoint confirmed from source
+    # RESOLVED: use /status endpoint — bare file ID returns 405
     resp = other_client.get(
-        f"/api/v1/records/{context['record_id']}/files/{context['file_id']}"
+        f"/api/v1/records/{context['record_id']}/files/{context['file_id']}/status"
     )
     assert resp.status_code in (403, 404), \
         f"Expected 403/404 for {role}, got {resp.status_code}: {resp.text}"
@@ -199,9 +184,9 @@ def file_visible_to(context, sergeant_token, role):
     if not role_token:
         raise ValueError(f"Role {role!r} not mapped — add to fixture map if needed")
     other_client = api_client(role_token)
-    # RESOLVED: actual endpoint confirmed from source
+    # RESOLVED: use /status endpoint — bare file ID returns 405
     resp = other_client.get(
-        f"/api/v1/records/{context['record_id']}/files/{context['file_id']}"
+        f"/api/v1/records/{context['record_id']}/files/{context['file_id']}/status"
     )
     assert resp.status_code == 200, \
         f"Expected 200 for {role}, got {resp.status_code}: {resp.text}"
@@ -210,9 +195,9 @@ def file_visible_to(context, sergeant_token, role):
 @then('I should be able to see the file')
 def can_see_file(context):
     # Uses context['client'] — already switched to iauser via 'I switch to user' step
-    # RESOLVED: actual endpoint confirmed from source
+    # RESOLVED: use /status endpoint — bare file ID returns 405
     resp = context['client'].get(
-        f"/api/v1/records/{context['record_id']}/files/{context['file_id']}"
+        f"/api/v1/records/{context['record_id']}/files/{context['file_id']}/status"
     )
     assert resp.status_code == 200, \
         f"Expected 200, got {resp.status_code}: {resp.text}"
