@@ -32,7 +32,7 @@ def try_upload_cross_user(context, officer_token):
     # Create a record as officer1 (owner), then attempt upload as the current user (officer2)
     officer1_client = api_client(officer_token)
     # RESOLVED: actual endpoint confirmed from source
-    r = officer1_client.post('/api/v1/records', json={'category': 'other', 'external_record_id': '[E2E] Cross-Upload Target'})
+    r = officer1_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': '[E2E] Cross-Upload Target'})
     assert r.status_code == 201, f"Setup failed creating officer1 record: {r.text}"
     officer1_record_id = r.json()['id']
 
@@ -59,7 +59,7 @@ def have_record_with_file(context, officer_token):
     # Uses officer_token regardless of current context role — this is setup state.
     setup_client = api_client(officer_token)
     # RESOLVED: actual endpoint confirmed from source
-    r = setup_client.post('/api/v1/records', json={'category': 'other', 'external_record_id': '[E2E] Share Test Record'})
+    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': '[E2E] Share Test Record'})
     assert r.status_code == 201, f"Setup failed: {r.text}"
     context['record_id'] = r.json()['id']
 
@@ -117,7 +117,7 @@ def create_expired_share(context, officer_token):
     context['client'] = setup_client
 
     # RESOLVED: actual endpoint confirmed from source
-    r = setup_client.post('/api/v1/records', json={'category': 'other', 'external_record_id': '[E2E] Expiry Test'})
+    r = setup_client.post('/api/v1/records', json={'category': 'id', 'external_record_id': '[E2E] Expiry Test'})
     assert r.status_code == 201, f"Setup failed: {r.text}"
     context['record_id'] = r.json()['id']
 

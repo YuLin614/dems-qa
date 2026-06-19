@@ -9,7 +9,7 @@ scenarios('../../features/evidence/upload-evidence.feature')
 @when(parsers.parse('I create a new evidence record titled "{title}"'))
 def create_record(context, title):
     # RESOLVED: actual endpoint confirmed from source
-    resp = context['client'].post('/api/v1/records', json={'category': 'other', 'external_record_id': title})
+    resp = context['client'].post('/api/v1/records', json={'category': 'id', 'external_record_id': title})
     assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
     context['record_id'] = resp.json()['id']
 
