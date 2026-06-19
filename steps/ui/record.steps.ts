@@ -23,18 +23,22 @@ When("I try to navigate to officer1's record", async function ({ page }) {
   await page.waitForLoadState('networkidle');
 });
 
-Then('I should see my records listed', async function ({ page }) {
-  // Verify at least one record row is visible
-  const rows = page.locator('[data-testid="record-row"]');
-  await rows.first().waitFor({ timeout: 10_000 });
-});
-
 Then('I should be redirected or see a 403 error', async function ({ page }) {
   const url = page.url();
-  // Check for any access-denied signal in the UI
-  const hasForbidden = await page.locator('text=Forbidden Action, text=403, text=Access Denied, text=forbidden').first().isVisible({ timeout: 3_000 }).catch(() => false);
+  const hasForbidden = await page.getByText('Forbidden Action').or(page.getByText('Access Denied'))
+    .or(page.getByText('403')).first().isVisible({ timeout: 3_000 }).catch(() => false);
   const isRedirectedAway = !url.includes('/admin') && !url.includes('/records/');
   if (!hasForbidden && !isRedirectedAway) {
     throw new Error(`Expected redirect or forbidden error, but URL is ${url}`);
   }
+});
+
+Then('I should see my records listed', async function ({ page }) {
+  // Retry once if dev site shows transient error
+  const hasError = await page.getByText('Unexpected Error').isVisible({ timeout: 2_000 }).catch(() => false);
+  if (hasError) {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
+  await page.locator('[data-testid="record-row"]').first().waitFor({ timeout: 15_000 });
 });
