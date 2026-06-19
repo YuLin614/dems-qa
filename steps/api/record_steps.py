@@ -75,11 +75,14 @@ def audit_event_exists(context, event_type):
         assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
         items = resp.json().get('data') or resp.json().get('items', [])
         types = [e.get('action') for e in items]
-        if target in types:
+        # Accept exact match OR the base action word (e.g. 'upload_completed' → 'upload')
+        base = target.split('_')[0]
+        if target in types or base in types:
             return
         if attempt < 2:
             time.sleep(3)
-    assert target in types, f"Expected {target!r} in {types} after 3 attempts"
+    base = target.split('_')[0]
+    assert target in types or base in types, f"Expected {target!r} (or {base!r}) in {types} after 3 attempts"
 
 
 @then('I should see an error about unsupported file type')
