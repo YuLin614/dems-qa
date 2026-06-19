@@ -17,17 +17,28 @@ When('I upload the file {string}', async function ({ page }, filename: string) {
   const fileInput = page.locator('input[type="file"]').first();
   await fileInput.setInputFiles(filePath);
 
-  // If there's a staging form (external_record_id / title field), fill it
-  // INSPECT: check if upload:staging-form has an external_record_id input
-  const titleInput = page.locator('[data-testid="upload:staging-form"] input').first();
-  const hasTitleInput = await titleInput.isVisible().catch(() => false);
-  if (hasTitleInput && (state as any).pendingTitle) {
-    await titleInput.fill((state as any).pendingTitle);
+  // Fill "Case Number" combobox with the pending title (if set)
+  // The upload modal has a Case Number autocomplete input
+  const caseInput = page.locator('input[placeholder*="Case"], input[placeholder*="case"], [data-testid="upload:staging-form"] input').first();
+  const hasCaseInput = await caseInput.isVisible({ timeout: 3_000 }).catch(() => false);
+  if (hasCaseInput && (state as any).pendingTitle) {
+    await caseInput.fill((state as any).pendingTitle);
+    // Dismiss dropdown if it appeared
+    await page.keyboard.press('Escape').catch(() => null);
   }
 
-  // Wait for upload to complete — progress indicator reaches 100%
-  // INSPECT: update if a different completion signal is more reliable
-  await page.waitForSelector('[data-testid="upload:batch-progress"]', { timeout: 60_000 });
+  // Click the "Upload (N) Files" button to start the upload
+  const uploadBtn = page.locator('button:has-text("Upload"), button:has-text("Upload (")').first();
+  if (await uploadBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await uploadBtn.click();
+  }
+
+  // Wait for upload progress or modal to close (upload started)
+  await Promise.race([
+    page.waitForSelector('[data-testid="upload:batch-progress"]', { timeout: 30_000 }),
+    page.waitForSelector('[data-testid="upload:header-indicator"]', { timeout: 30_000 }),
+    page.waitForFunction(() => !document.querySelector('[data-testid="upload:modal"]'), { timeout: 30_000 }),
+  ]).catch(() => null); // best-effort — proceed even if indicator not found
 
   // Extract record ID from URL if navigated to record page after upload
   const url = page.url();

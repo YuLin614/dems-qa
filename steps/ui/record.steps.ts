@@ -31,10 +31,10 @@ Then('I should see my records listed', async function ({ page }) {
 
 Then('I should be redirected or see a 403 error', async function ({ page }) {
   const url = page.url();
-  const has403 = await page.locator('text=403').isVisible().catch(() => false);
-  const hasAccessDenied = await page.locator('text=Access Denied').isVisible().catch(() => false);
+  // Check for any access-denied signal in the UI
+  const hasForbidden = await page.locator('text=Forbidden Action, text=403, text=Access Denied, text=forbidden').first().isVisible({ timeout: 3_000 }).catch(() => false);
   const isRedirectedAway = !url.includes('/admin') && !url.includes('/records/');
-  if (!has403 && !hasAccessDenied && !isRedirectedAway) {
-    throw new Error(`Expected redirect or 403, but URL is ${url}`);
+  if (!hasForbidden && !isRedirectedAway) {
+    throw new Error(`Expected redirect or forbidden error, but URL is ${url}`);
   }
 });
