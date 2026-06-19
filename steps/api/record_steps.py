@@ -67,11 +67,25 @@ def file_in_list(context):
 
 @then(parsers.parse('an audit event "{event_type}" should exist for the file'))
 def audit_event_exists(context, event_type):
-    resp = context['client'].get(
-        '/api/v1/audit/logs',
-        params={'file_id': context['file_id']},
-    )
-    assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
-    items = resp.json().get('data') or resp.json().get('items', [])
-    types = [e.get('action') for e in items]
-    assert event_type.lower() in types, f"Expected {event_type.lower()!r} in {types}"
+    import time
+    target = event_type.lower()
+    # Retry up to 3 times — audit events may be processed asynchronously
+    for attempt in range(3):
+        resp = context['client'].get('/api/v1/audit/logs', params={'file_id': context['file_id']})
+        assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
+        items = resp.json().get('data') or resp.json().get('items', [])
+        types = [e.get('action') for e in items]
+        if target in types:
+            return
+        if attempt < 2:
+            time.sleep(3)
+    assert target in types, f"Expected {target!r} in {types} after 3 attempts"
+
+
+@then('I should see an error about unsupported file type')
+def error_unsupported_type(context):
+    resp = context['last_response']
+    assert resp.status_code in (400, 422), f"Expected 400/422, got {resp.status_code}: {resp.text}"
+    body = resp.text.lower()
+    assert any(k in body for k in ('file type', 'extension', 'unsupported', 'not allowed', 'invalid')), \
+        f"Expected file type error message in: {resp.text}"

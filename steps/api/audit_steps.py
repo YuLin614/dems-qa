@@ -44,6 +44,7 @@ def export_chain_of_custody(context):
     resp = context['client'].get(
         f"/api/v1/audit/chain-of-custody/files/{context['file_id']}/export",
         params={"format": "pdf"},
+        headers={"X-Download-Reason": "E2E test chain of custody export"},
     )
     assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
     assert resp.headers.get('content-type', '').startswith('application/pdf'), \
