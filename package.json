@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test:ui":    "bddgen && playwright test",
+    "test:ui":    "bddgen && playwright test --headed",
     "test:api":   "python -m pytest steps/api/ -v",
     "setup:auth": "playwright test --project=setup",
     "purge":      "ts-node scripts/purge-test-data.ts"
