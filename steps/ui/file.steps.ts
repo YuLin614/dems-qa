@@ -79,17 +79,18 @@ Then('an audit event {string} should exist for the file', async function ({ page
 });
 
 Then("the file should appear in the record's file list", async function ({ page }) {
-  // If still on records list (not inside a record), click the most recent [E2E] record
-  if (!page.url().match(/\/record\//)) {
-    const e2eRow = page.locator('[data-testid="record-row"]').filter({ hasText: '[E2E]' }).first();
-    if (await e2eRow.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await e2eRow.click();
-      await page.waitForURL(/\/record\//, { timeout: 10_000 });
-    }
+  // If inside a record page, check for file rows
+  if (page.url().match(/\/record\//)) {
+    await page.waitForFunction(() => {
+      const rows = document.querySelectorAll('[role="row"]');
+      return rows.length > 1;
+    }, { timeout: 15_000 });
+    return;
   }
-  // Wait for at least one file row (role="row") inside the record view
-  await page.waitForFunction(() => {
-    const rows = document.querySelectorAll('[role="row"]');
-    return rows.length > 1;
-  }, { timeout: 15_000 });
+  // On records list: find the [E2E] record row showing at least 1 file
+  const fileCountRow = page.locator('[data-testid="record-row"]')
+    .filter({ hasText: '[E2E]' })
+    .filter({ hasNotText: '0 Files' })
+    .first();
+  await fileCountRow.waitFor({ timeout: 10_000 });
 });
