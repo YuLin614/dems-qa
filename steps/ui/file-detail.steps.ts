@@ -1,32 +1,28 @@
 // steps/ui/file-detail.steps.ts
 import { When, Then, Given, state } from './fixtures';
 
-// Navigate to the records list, find a record with files, enter it via its View link
+// Navigate to the records list, find a record with files, navigate into it
 Given('I am on a record with files', async function ({ page }) {
   await page.goto(process.env.FRONTEND_URL!);
   await page.waitForLoadState('networkidle');
 
-  // Find a record row with at least 1 file, then click its "View" link
-  const row = page.locator('[data-testid="record-row"]')
-    .filter({ hasNotText: '0 Files' })
-    .first();
-  await row.waitFor({ timeout: 15_000 });
+  // Wait for record rows to appear
+  await page.locator('[data-testid="record-row"]').first().waitFor({ timeout: 15_000 });
 
-  // Click the "View" link inside the row (the actual navigation link)
-  const viewLink = row.getByRole('link', { name: /view/i }).first();
-  if (await viewLink.isVisible({ timeout: 2_000 }).catch(() => false)) {
-    await viewLink.click();
-  } else {
-    // Fallback: extract href from any anchor inside the row and navigate directly
-    const href = await row.locator('a[href*="record"]').first().getAttribute('href').catch(() => null);
-    if (href) {
-      await page.goto(href.startsWith('http') ? href : `${process.env.FRONTEND_URL}${href.replace(/^\./, '')}`);
-    } else {
-      // Last resort: click the row itself
-      await row.click();
+  // Use DOM evaluation to find the href of a record with files (avoids hover/visibility issues)
+  const href = await page.evaluate(() => {
+    const rows = document.querySelectorAll('[data-testid="record-row"]');
+    for (const row of rows) {
+      if (row.textContent?.includes('0 Files')) continue;
+      // Find any link to a record page inside this row
+      const link = row.querySelector('a[href*="record"]') as HTMLAnchorElement | null;
+      if (link?.href) return link.href;
     }
-  }
+    return null;
+  });
 
+  if (!href) throw new Error('No record with files found on the records list page');
+  await page.goto(href);
   await page.waitForURL(/\/record\/([\w-]+)/, { timeout: 10_000 });
   const match = page.url().match(/\/record\/([\w-]+)/);
   if (match) state.recordId = match[1];
@@ -37,19 +33,20 @@ When('I navigate to the record page', async function ({ page }) {
   if (state.recordId) {
     await page.goto(`${process.env.FRONTEND_URL}/record/${state.recordId}`);
   } else {
-    // Fall back: find a record with files via its View link
+    // Fall back: find a record with files via DOM href
     await page.goto(process.env.FRONTEND_URL!);
     await page.waitForLoadState('networkidle');
-    const row = page.locator('[data-testid="record-row"]').filter({ hasNotText: '0 Files' }).first();
-    await row.waitFor({ timeout: 10_000 });
-    const viewLink = row.getByRole('link', { name: /view/i }).first();
-    if (await viewLink.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await viewLink.click();
-    } else {
-      const href = await row.locator('a[href*="record"]').first().getAttribute('href').catch(() => null);
-      if (href) await page.goto(href.startsWith('http') ? href : `${process.env.FRONTEND_URL}${href.replace(/^\./, '')}`);
-      else await row.click();
-    }
+    await page.locator('[data-testid="record-row"]').first().waitFor({ timeout: 10_000 });
+    const href = await page.evaluate(() => {
+      const rows = document.querySelectorAll('[data-testid="record-row"]');
+      for (const row of rows) {
+        if (row.textContent?.includes('0 Files')) continue;
+        const link = row.querySelector('a[href*="record"]') as HTMLAnchorElement | null;
+        if (link?.href) return link.href;
+      }
+      return null;
+    });
+    if (href) await page.goto(href);
     await page.waitForURL(/\/record\//, { timeout: 10_000 });
     const match = page.url().match(/\/record\/([\w-]+)/);
     if (match) state.recordId = match[1];
