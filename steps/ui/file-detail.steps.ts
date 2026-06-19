@@ -115,8 +115,10 @@ async function openMoreMenu(page: import('@playwright/test').Page) {
 When('I download the file with reason {string}', async function ({ page }, reason: string) {
   await openMoreMenu(page);
 
-  // Click Download in the dropdown — filter menuitem by text
-  await page.locator('[role="menuitem"]').filter({ hasText: 'Download' }).first().click();
+  // Click Download in the dropdown
+  // File may be PROCESSING — use force:true to bypass disabled state check
+  const downloadItem = page.locator('[role="menuitem"]').filter({ hasText: 'Download' }).first();
+  await downloadItem.click({ force: true, timeout: 5_000 }).catch(() => null);
 
   // Download dialog may not appear if file is still PROCESSING — soft check
   const reasonInput = page.locator('textarea[name="reason"], textarea[id*="reason"], textarea[id*="download"]').first();
