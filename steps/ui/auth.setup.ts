@@ -15,13 +15,20 @@ const roles = [
 
 for (const role of roles) {
   setup(`authenticate as ${role.name}`, async ({ page }) => {
-    await page.goto(FRONTEND_URL);
-    // Keycloak redirects automatically — fill credentials on the Keycloak login form
-    // If selectors are wrong: open browser DevTools on the Keycloak login page and inspect
-    await page.fill('[name="username"]', role.username);
-    await page.fill('[name="password"]', role.password);
-    await page.click('[type="submit"]');
-    await page.waitForURL(`${FRONTEND_URL}/**`);
+    // Navigate directly to /api/signin which triggers Keycloak redirect
+    await page.goto(`${FRONTEND_URL}/api/signin`);
+
+    // Wait for Keycloak login URL
+    await page.waitForURL(/auth\.dems-dev\.versaterm\.org/, { timeout: 30_000 });
+
+    // Keycloak form — try common field selectors
+    await page.waitForSelector('#username, [name="username"], input[autocomplete="username"]', { timeout: 15_000 });
+    await page.fill('#username, [name="username"], input[autocomplete="username"]', role.username);
+    await page.fill('#password, [name="password"], input[autocomplete="current-password"]', role.password);
+    await page.locator('#kc-login, [type="submit"]').first().click();
+
+    // Wait for redirect back to app
+    await page.waitForURL(`${FRONTEND_URL}/**`, { timeout: 30_000 });
     await page.context().storageState({ path: path.join('.auth', `${role.name}.json`) });
   });
 }
