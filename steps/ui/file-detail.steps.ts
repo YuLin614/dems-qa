@@ -1,19 +1,33 @@
 // steps/ui/file-detail.steps.ts
 import { When, Then, Given, state } from './fixtures';
 
-// Navigate to the records list, find a record with files, enter it
+// Navigate to the records list, find a record with files, enter it via its View link
 Given('I am on a record with files', async function ({ page }) {
   await page.goto(process.env.FRONTEND_URL!);
   await page.waitForLoadState('networkidle');
 
-  // Find any record row that has at least 1 file
-  const recordWithFiles = page.locator('[data-testid="record-row"]')
+  // Find a record row with at least 1 file, then click its "View" link
+  const row = page.locator('[data-testid="record-row"]')
     .filter({ hasNotText: '0 Files' })
     .first();
-  await recordWithFiles.waitFor({ timeout: 15_000 });
-  await recordWithFiles.click();
-  await page.waitForURL(/\/record\/([\w-]+)/, { timeout: 10_000 });
+  await row.waitFor({ timeout: 15_000 });
 
+  // Click the "View" link inside the row (the actual navigation link)
+  const viewLink = row.getByRole('link', { name: /view/i }).first();
+  if (await viewLink.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await viewLink.click();
+  } else {
+    // Fallback: extract href from any anchor inside the row and navigate directly
+    const href = await row.locator('a[href*="record"]').first().getAttribute('href').catch(() => null);
+    if (href) {
+      await page.goto(href.startsWith('http') ? href : `${process.env.FRONTEND_URL}${href.replace(/^\./, '')}`);
+    } else {
+      // Last resort: click the row itself
+      await row.click();
+    }
+  }
+
+  await page.waitForURL(/\/record\/([\w-]+)/, { timeout: 10_000 });
   const match = page.url().match(/\/record\/([\w-]+)/);
   if (match) state.recordId = match[1];
 });
@@ -23,12 +37,19 @@ When('I navigate to the record page', async function ({ page }) {
   if (state.recordId) {
     await page.goto(`${process.env.FRONTEND_URL}/record/${state.recordId}`);
   } else {
-    // Fall back: find a record with files
+    // Fall back: find a record with files via its View link
     await page.goto(process.env.FRONTEND_URL!);
     await page.waitForLoadState('networkidle');
     const row = page.locator('[data-testid="record-row"]').filter({ hasNotText: '0 Files' }).first();
     await row.waitFor({ timeout: 10_000 });
-    await row.click();
+    const viewLink = row.getByRole('link', { name: /view/i }).first();
+    if (await viewLink.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await viewLink.click();
+    } else {
+      const href = await row.locator('a[href*="record"]').first().getAttribute('href').catch(() => null);
+      if (href) await page.goto(href.startsWith('http') ? href : `${process.env.FRONTEND_URL}${href.replace(/^\./, '')}`);
+      else await row.click();
+    }
     await page.waitForURL(/\/record\//, { timeout: 10_000 });
     const match = page.url().match(/\/record\/([\w-]+)/);
     if (match) state.recordId = match[1];
