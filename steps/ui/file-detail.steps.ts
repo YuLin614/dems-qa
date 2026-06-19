@@ -62,14 +62,25 @@ When('I open the first file in the record', async function ({ page }) {
     await page.waitForLoadState('networkidle');
   }
 
-  // Wait for file table rows (header + at least 1 data row)
-  await page.waitForFunction(() => {
-    const rows = document.querySelectorAll('[role="row"]');
-    return rows.length > 1;
-  }, { timeout: 15_000 });
+  // Wait for at least one file to load — thumbnail image is reliable indicator
+  await page.locator('table img, [class*="thumbnail"] img, img[src*="thumbnail"], img[alt]').first()
+    .waitFor({ timeout: 15_000 }).catch(() => null);
 
-  // Click first data row — file detail opens via ?file= query param
-  await page.locator('[role="row"]').nth(1).click();
+  // Also wait for the file table search input which confirms the file table is mounted
+  await page.locator('[data-testid="file-table:search-input"]').waitFor({ timeout: 10_000 }).catch(() => null);
+
+  // Click the first file row: use the Captured date text as a reliable click target
+  // (checkboxes and buttons are excluded from row-click in the data-table component)
+  // Click on the thumbnail image area which is inside the row
+  const clickTarget = page.locator('table img, [class*="thumbnail"] img, img[src*="thumbnail"]').first();
+  if (await clickTarget.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await clickTarget.click();
+  } else {
+    // Fallback: click anywhere in the table body that isn't a checkbox/button
+    await page.locator('table tbody tr, [data-index="0"]').first().click();
+  }
+
+  // File detail opens via ?file= query param
   await page.waitForURL(/\?file=/, { timeout: 10_000 });
 
   const fileIdMatch = page.url().match(/[?&]file=([\w-]+)/);
@@ -193,13 +204,15 @@ Then('I should see records matching the search', async function ({ page }) {
 
 // Select first file via checkbox to trigger bulk toolbar
 When('I select the first file with checkbox', async function ({ page }) {
-  await page.waitForFunction(() => {
-    const rows = document.querySelectorAll('[role="row"]');
-    return rows.length > 1;
-  }, { timeout: 15_000 });
+  // Wait for file table to load
+  await page.locator('[data-testid="file-table:search-input"]').waitFor({ timeout: 15_000 });
 
-  const checkbox = page.locator('[role="row"]').nth(1).locator('input[type="checkbox"]');
-  await checkbox.check();
+  // Click the first data checkbox (skip the select-all header checkbox)
+  const checkboxes = page.locator('input[type="checkbox"]');
+  const count = await checkboxes.count();
+  // Use the second checkbox (first is select-all header), or first if only one
+  const idx = count > 1 ? 1 : 0;
+  await checkboxes.nth(idx).check();
 });
 
 // Assert bulk toolbar is visible
