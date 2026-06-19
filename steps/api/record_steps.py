@@ -2,8 +2,6 @@
 import os
 from pytest_bdd import scenarios, when, then, parsers
 
-from conftest import api_client  # noqa: F401 — imported so callers can reference it
-
 # Bind all scenarios in upload-evidence.feature to this test module
 scenarios('../../features/evidence/upload-evidence.feature')
 

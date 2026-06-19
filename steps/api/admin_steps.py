@@ -2,8 +2,6 @@
 import os
 from pytest_bdd import scenarios, when, then, parsers
 
-from conftest import api_client  # noqa: F401 — imported so callers can reference it
-
 scenarios('../../features/admin/user-management.feature')
 scenarios('../../features/admin/retention.feature')
 

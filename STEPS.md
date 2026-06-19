@@ -6,6 +6,7 @@ Use these steps to write new scenarios. No TypeScript or Python needed.
 | Step | Layer | Roles |
 |---|---|---|
 | `Given I am logged in as "{role}"` | @ui @api | officer1, officer2, sergeant1, admin, iauser, sysops1 |
+| `And I switch to user "{role}"` | @api | Re-authenticates context mid-scenario; roles same as Given |
 
 ## Records
 | Step | Layer | Notes |

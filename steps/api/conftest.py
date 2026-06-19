@@ -85,4 +85,5 @@ def i_am_logged_in_as(context, officer_token, officer2_token, sergeant_token,
 # Pre-flight shared Then step — used by upload, audit, and admin scenarios
 @then('I should receive a 403 error')
 def receive_403(context):
-    assert context["last_response"].status_code == 403
+    assert context["last_response"].status_code == 403, \
+        f"Expected 403, got {context['last_response'].status_code}: {context['last_response'].text}"

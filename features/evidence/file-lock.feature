@@ -8,6 +8,8 @@ Feature: File Lock
     Then the file should not be visible to "officer2"
     But the file should be visible to "sergeant1"
 
+  # NOTE: This scenario uses 'I switch to user' instead of 'Given a file is locked as'
+  # to avoid ambiguous step definitions. The step 'I switch to user' re-sets context['client'].
   @api
   Scenario: Internal Affairs can view locked files
     Given I am logged in as "officer1"

@@ -5,8 +5,10 @@ const BACKEND_URL  = process.env.BACKEND_URL!;
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL!;
 const REALM        = process.env.KEYCLOAK_REALM!;
 const CLIENT_ID    = process.env.KEYCLOAK_CLIENT_ID!;
-const USERNAME     = process.env.TEST_OFFICER_USERNAME!;
-const PASSWORD     = process.env.TEST_OFFICER_PASSWORD!;
+// Use sysops credentials for broader record list scope
+// VERIFY: confirm GET /records returns all-agency records for sysops role
+const USERNAME     = process.env.TEST_SYSOPS_USERNAME!;
+const PASSWORD     = process.env.TEST_SYSOPS_PASSWORD!;
 const MAX_AGE_HOURS = parseInt(process.env.PURGE_MAX_AGE_HOURS ?? '24', 10);
 const DRY_RUN = process.argv.includes('--dry-run');
 
