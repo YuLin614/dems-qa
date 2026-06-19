@@ -1,6 +1,5 @@
 // scripts/purge-test-data.ts
 import 'dotenv/config';
-import https from 'https';
 
 const BACKEND_URL  = process.env.BACKEND_URL!;
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL!;
