@@ -1,4 +1,5 @@
 # steps/api/conftest.py
+import json
 import os
 import httpx
 import pytest
@@ -7,21 +8,58 @@ from pytest_bdd import given, then, parsers
 
 load_dotenv()
 
-KEYCLOAK_URL = os.environ["KEYCLOAK_URL"]
-REALM        = os.environ["KEYCLOAK_REALM"]
-CLIENT_ID    = os.environ["KEYCLOAK_CLIENT_ID"]
+FRONTEND_URL = os.environ["FRONTEND_URL"]
 BACKEND_URL  = os.environ["BACKEND_URL"]
 
+# Auth state files saved by `npm run setup:auth` (Playwright browser login)
+AUTH_DIR = os.path.join(os.path.dirname(__file__), '../../.auth')
 
-def fetch_token(username: str, password: str) -> str:
-    resp = httpx.post(
-        f"{KEYCLOAK_URL}/oidc/realms/{REALM}/protocol/openid-connect/token",
-        data={"client_id": CLIENT_ID, "grant_type": "password",
-              "username": username, "password": password},
-        timeout=10,
-    )
+ROLE_AUTH_FILE = {
+    "officer":  "officer.json",
+    "officer2": "officer2.json",
+    "sergeant": "sergeant.json",
+    "admin":    "admin.json",
+    "iauser":   "iauser.json",
+    "sysops":   "sysops.json",
+}
+
+
+def fetch_token_from_session(role: str) -> str:
+    """
+    Extract Keycloak Bearer token from a Playwright-saved auth state.
+    Calls /api/auth/session with the NextAuth session cookie — no direct
+    Keycloak access grants needed.
+    Run `npm run setup:auth` first to create .auth/*.json files.
+    """
+    auth_file = os.path.join(AUTH_DIR, ROLE_AUTH_FILE[role])
+    if not os.path.exists(auth_file):
+        raise FileNotFoundError(
+            f".auth/{ROLE_AUTH_FILE[role]} not found. "
+            f"Run `npm run setup:auth` first to save Playwright sessions."
+        )
+
+    with open(auth_file) as f:
+        auth_state = json.load(f)
+
+    # Extract NextAuth session cookie from Playwright storage state
+    cookies = {
+        c["name"]: c["value"]
+        for c in auth_state.get("cookies", [])
+        if "session-token" in c["name"]
+    }
+    if not cookies:
+        raise ValueError(f"No session-token cookie found in .auth/{ROLE_AUTH_FILE[role]}")
+
+    resp = httpx.get(f"{FRONTEND_URL}/api/auth/session", cookies=cookies, timeout=10)
     resp.raise_for_status()
-    return resp.json()["access_token"]
+
+    token = resp.json().get("user", {}).get("accessToken")
+    if not token:
+        raise ValueError(
+            f"No accessToken in /api/auth/session response for role={role}. "
+            f"Session may be expired — re-run `npm run setup:auth`."
+        )
+    return token
 
 
 def api_client(token: str) -> httpx.Client:
@@ -34,36 +72,34 @@ def api_client(token: str) -> httpx.Client:
 
 @pytest.fixture(scope="session")
 def officer_token() -> str:
-    return fetch_token(os.environ["TEST_OFFICER_USERNAME"], os.environ["TEST_OFFICER_PASSWORD"])
+    return fetch_token_from_session("officer")
 
 @pytest.fixture(scope="session")
 def officer2_token() -> str:
-    return fetch_token(os.environ["TEST_OFFICER2_USERNAME"], os.environ["TEST_OFFICER2_PASSWORD"])
+    return fetch_token_from_session("officer2")
 
 @pytest.fixture(scope="session")
 def sergeant_token() -> str:
-    return fetch_token(os.environ["TEST_SUPERVISOR_USERNAME"], os.environ["TEST_SUPERVISOR_PASSWORD"])
+    return fetch_token_from_session("sergeant")
 
 @pytest.fixture(scope="session")
 def admin_token() -> str:
-    return fetch_token(os.environ["TEST_ADMIN_USERNAME"], os.environ["TEST_ADMIN_PASSWORD"])
+    return fetch_token_from_session("admin")
 
 @pytest.fixture(scope="session")
 def iauser_token() -> str:
-    return fetch_token(os.environ["TEST_IA_USERNAME"], os.environ["TEST_IA_PASSWORD"])
+    return fetch_token_from_session("iauser")
 
 @pytest.fixture(scope="session")
 def sysops_token() -> str:
-    return fetch_token(os.environ["TEST_SYSOPS_USERNAME"], os.environ["TEST_SYSOPS_PASSWORD"])
+    return fetch_token_from_session("sysops")
 
 
-# Shared mutable state for each scenario — reset per test automatically (function scope)
 @pytest.fixture
 def context() -> dict:
     return {}
 
 
-# Shared Given step — available to all step files in steps/api/
 @given(parsers.parse('I am logged in as "{role}"'))
 def i_am_logged_in_as(context, officer_token, officer2_token, sergeant_token,
                        admin_token, iauser_token, sysops_token, role):
@@ -82,7 +118,6 @@ def i_am_logged_in_as(context, officer_token, officer2_token, sergeant_token,
     context["client"] = api_client(token)
 
 
-# Pre-flight shared Then step — used by upload, audit, and admin scenarios
 @then('I should receive a 403 error')
 def receive_403(context):
     assert context["last_response"].status_code == 403, \
