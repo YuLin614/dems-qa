@@ -147,12 +147,7 @@ Then('the menu shows {string}', async function ({}, itemText: string) {
 
 Then('a download dialog or download is initiated', async function ({}) {
   const dp = getDemsPage();
-  // Either a dialog opens or a native download starts — check for dialog first
-  const hasDialog = await dp.locator('[role="dialog"]').isVisible({ timeout: 8_000 }).catch(() => false);
-  if (!hasDialog) {
-    // Verify download event as fallback
-    await expect(dp.locator('[role="dialog"], [data-testid*="download"]')).toBeVisible({ timeout: 5_000 });
-  }
+  await expect(dp.locator('[role="dialog"], [data-testid*="download"]')).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the restriction dialog is visible', async function ({}) {
