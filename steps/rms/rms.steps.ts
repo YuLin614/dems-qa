@@ -21,7 +21,7 @@ Given('I have opened DEMS integration from RMS record {string}', async function 
 
 Given('I have opened the file {string}', async function ({}, fileName: string) {
   const dp = getDemsPage();
-  await dp.locator('[role="row"]').filter({ hasText: fileName }).first().click();
+  await dp.getByRole('row').filter({ hasText: fileName }).first().click();
   await dp.waitForSelector('[data-testid="video-viewer-root"]', { timeout: 15_000 });
 });
 
@@ -45,12 +45,12 @@ Then('the {string} button is visible', async function ({}, buttonText: string) {
 
 Then('the file list is visible', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('[role="row"]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('row').first()).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the list shows {string} column', async function ({}, columnName: string) {
   const dp = getDemsPage();
-  await expect(dp.locator('[role="columnheader"]').filter({ hasText: columnName }).first()).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('columnheader').filter({ hasText: columnName }).first()).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the total item count is displayed', async function ({}) {
@@ -173,13 +173,12 @@ When('I clear the search', async function ({}) {
 
 Then('the file list shows at least 1 result', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('[role="row"]').nth(1)).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('row').nth(1)).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the file list shows no results', async function ({}) {
   const dp = getDemsPage();
-  // nth(1) would be first data row; header is nth(0)
-  await expect(dp.locator('[role="row"]').nth(1)).not.toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('row').nth(1)).not.toBeVisible({ timeout: 10_000 });
 });
 
 Then('the results contain {string}', async function ({}, text: string) {

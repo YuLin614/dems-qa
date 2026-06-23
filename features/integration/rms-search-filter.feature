@@ -5,9 +5,9 @@ Feature: Search and filter in DEMS integration mode
     Given I have opened DEMS integration from RMS record "PP 2026-12300"
 
   Scenario: Search for existing file returns results
-    When I search for "197483"
+    When I search for "GOPP202612300"
     Then the file list shows at least 1 result
-    And the results contain "197483"
+    And the results contain "GOPP202612300"
 
   Scenario: Search for non-existent term shows empty state
     When I search for "zzz_nonexistent_xyz_abc"
