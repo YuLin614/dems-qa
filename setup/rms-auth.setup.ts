@@ -26,7 +26,7 @@ setup('authenticate with RMS Microsoft account', async ({ page }) => {
   }
 
   // Wait for redirect back to RMS dashboard
-  await page.waitForURL(/vsrms-integration-testing/, { timeout: 30_000 });
+  await page.waitForURL(/usrms-integration-testing/, { timeout: 30_000 });
   await page.waitForSelector('text=Quick Launch', { timeout: 15_000 });
 
   await page.context().storageState({ path: '.auth/rms-user.json' });

@@ -7,10 +7,8 @@ Given('I am on the RMS site', async function ({ page }) {
 });
 
 When('I navigate to record {string} via Quick Launch Recent', async function ({ page }, record: string) {
-  // Expand the Recent section in Quick Launch panel
-  await page.click('text=Recent');
-  // Click the matching record link
-  await page.getByText(record, { exact: true }).first().click();
+  // Recent section is already expanded on load — click record directly
+  await page.getByText(record).first().dblclick();
   // Wait for the record toolbar to appear (confirms record loaded)
   await page.waitForSelector('text=Digital Evidence', { timeout: 15_000 });
 });
