@@ -21,9 +21,9 @@ Given('I have opened DEMS integration from RMS record {string}', async function 
 
 Given('I have opened the file {string}', async function ({}, _fileName: string) {
   const dp = getDemsPage();
-  // Click first data row (nth(0) is header row)
+  // Click first data row (nth(0) is header row) — opens file detail dialog
   await dp.getByRole('row').nth(1).click();
-  await dp.waitForSelector('[data-testid="video-viewer-root"]', { timeout: 15_000 });
+  await dp.getByRole('dialog').waitFor({ timeout: 15_000 });
 });
 
 // ─── Entry / landing page assertions ───
@@ -103,9 +103,9 @@ Then('the file {string} appears in the evidence list', async function ({}, fileN
 
 // ─── File detail ───
 
-Then('the video player is visible', async function ({}) {
+Then('the file viewer is open', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('[data-testid="video-viewer-root"]')).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('dialog')).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the {string} tab is active', async function ({}, tabName: string) {

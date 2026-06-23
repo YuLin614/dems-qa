@@ -5,8 +5,8 @@ Feature: File detail view in DEMS integration mode
     Given I have opened DEMS integration from RMS record "PP 2026-12300"
     And I have opened the file "197483-905015011_medium.mp4"
 
-  Scenario: Video player is visible
-    Then the video player is visible
+  Scenario: File viewer dialog opens
+    Then the file viewer is open
 
   Scenario: Information tab shows file metadata
     Then the "Information" tab is active

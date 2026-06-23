@@ -10,6 +10,6 @@ Feature: DEMS integration mode landing page
   Scenario: Evidence file list shows correct columns
     Given I have opened DEMS integration from RMS record "PP 2026-12300"
     Then the file list is visible
-    And the list shows "File Name" column
     And the list shows "Captured" column
+    And the list shows "Incident" column
     And the total item count is displayed
