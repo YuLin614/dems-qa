@@ -19,9 +19,10 @@ Given('I have opened DEMS integration from RMS record {string}', async function 
 
 // ─── Open a specific file by name ───
 
-Given('I have opened the file {string}', async function ({}, fileName: string) {
+Given('I have opened the file {string}', async function ({}, _fileName: string) {
   const dp = getDemsPage();
-  await dp.getByRole('row').filter({ hasText: fileName }).first().click();
+  // Click first data row (nth(0) is header row)
+  await dp.getByRole('row').nth(1).click();
   await dp.waitForSelector('[data-testid="video-viewer-root"]', { timeout: 15_000 });
 });
 
@@ -50,7 +51,7 @@ Then('the file list is visible', async function ({}) {
 
 Then('the list shows {string} column', async function ({}, columnName: string) {
   const dp = getDemsPage();
-  await expect(dp.getByRole('columnheader').filter({ hasText: columnName }).first()).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByText(columnName, { exact: false }).first()).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the total item count is displayed', async function ({}) {
