@@ -22,7 +22,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.FRONTEND_URL,
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'on',
   },
   projects: [
     { name: 'setup', testDir: 'setup', testMatch: /(?<!rms-)auth\.setup\.ts/ },
