@@ -8,6 +8,13 @@ const testDir = defineBddConfig({
   tags: '@ui',
 });
 
+const rmsTestDir = defineBddConfig({
+  features: 'features/integration/**/*.feature',
+  steps: ['steps/rms/**/*.ts'],
+  tags: '@rms',
+  outputDir: '.features-gen-rms',
+});
+
 export default defineConfig({
   testDir,
   workers: 1,
@@ -22,6 +29,16 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    { name: 'rms-setup', testDir: 'setup', testMatch: /rms-auth\.setup\.ts/ },
+    {
+      name: 'rms-chromium',
+      testDir: rmsTestDir,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/rms-user.json',
+      },
+      dependencies: ['rms-setup'],
     },
   ],
   reporter: [['html', { open: 'never' }], ['list']],
