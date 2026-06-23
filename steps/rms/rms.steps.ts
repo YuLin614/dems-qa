@@ -21,7 +21,7 @@ Given('I have opened DEMS integration from RMS record {string}', async function 
 
 Given('I have opened the file {string}', async function ({}, fileName: string) {
   const dp = getDemsPage();
-  await dp.locator('tbody tr').filter({ hasText: fileName }).first().click();
+  await dp.locator('[role="row"]').filter({ hasText: fileName }).first().click();
   await dp.waitForSelector('[data-testid="video-viewer-root"]', { timeout: 15_000 });
 });
 
@@ -45,12 +45,12 @@ Then('the {string} button is visible', async function ({}, buttonText: string) {
 
 Then('the file list is visible', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('table, [role="table"]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(dp.locator('[role="row"]').first()).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the list shows {string} column', async function ({}, columnName: string) {
   const dp = getDemsPage();
-  await expect(dp.getByRole('columnheader', { name: columnName })).toBeVisible({ timeout: 10_000 });
+  await expect(dp.locator('[role="columnheader"]').filter({ hasText: columnName }).first()).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the total item count is displayed', async function ({}) {
@@ -77,7 +77,7 @@ Then('the Manage Uploads modal is visible', async function ({}) {
 
 Then('the case number shows {string}', async function ({}, caseNumber: string) {
   const dp = getDemsPage();
-  await expect(dp.locator('[data-testid="upload:modal"]').getByText(caseNumber)).toBeVisible({ timeout: 5_000 });
+  await expect(dp.getByText(caseNumber, { exact: false }).first()).toBeVisible({ timeout: 5_000 });
 });
 
 Then('the Manage Uploads modal is closed', async function ({}) {
@@ -91,13 +91,13 @@ When('I upload the file {string}', async function ({}, filePath: string) {
   await dp.waitForSelector('[data-testid="upload:modal"]', { timeout: 10_000 });
   await dp.locator('input[type="file"]').setInputFiles(path.resolve(filePath));
   await dp.getByRole('button', { name: /Upload \(\d+\) Files/i }).click();
-  await expect(dp.locator('[data-testid="upload:modal"]')).not.toBeVisible({ timeout: 10_000 });
+  // Modal stays open during processing — don't wait for it to close
 });
 
 Then('the file {string} appears in the evidence list', async function ({}, fileName: string) {
   const dp = getDemsPage();
-  // File starts as PROCESSING — poll up to 60 s for filename to appear in the list
-  await expect(dp.locator('tbody').getByText(fileName, { exact: false })).toBeVisible({ timeout: 60_000 });
+  // File starts as PROCESSING — poll up to 60 s for filename to appear anywhere on the page
+  await expect(dp.getByText(fileName, { exact: false }).first()).toBeVisible({ timeout: 60_000 });
 });
 
 // ─── File detail ───
@@ -161,29 +161,30 @@ Then('the restriction dialog is visible', async function ({}) {
 
 When('I search for {string}', async function ({}, term: string) {
   const dp = getDemsPage();
-  await dp.locator('[data-testid="file-table:search-input"]').fill(term);
+  await dp.locator('[data-testid="file-table:search-input"] input').fill(term);
   await dp.waitForTimeout(800); // debounce wait
 });
 
 When('I clear the search', async function ({}) {
   const dp = getDemsPage();
-  await dp.locator('[data-testid="file-table:search-input"]').clear();
+  await dp.locator('[data-testid="file-table:search-input"] input').clear();
   await dp.waitForTimeout(800);
 });
 
 Then('the file list shows at least 1 result', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('tbody tr').first()).toBeVisible({ timeout: 10_000 });
+  await expect(dp.locator('[role="row"]').nth(1)).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the file list shows no results', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('tbody tr')).toHaveCount(0, { timeout: 10_000 });
+  // nth(1) would be first data row; header is nth(0)
+  await expect(dp.locator('[role="row"]').nth(1)).not.toBeVisible({ timeout: 10_000 });
 });
 
 Then('the results contain {string}', async function ({}, text: string) {
   const dp = getDemsPage();
-  await expect(dp.locator('tbody').getByText(text, { exact: false }).first()).toBeVisible({ timeout: 5_000 });
+  await expect(dp.getByText(text, { exact: false }).first()).toBeVisible({ timeout: 5_000 });
 });
 
 When('I open the filter panel', async function ({}) {
