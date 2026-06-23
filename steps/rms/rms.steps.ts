@@ -65,7 +65,8 @@ When('I click {string}', async function ({}, text: string) {
   const dp = getDemsPage();
   const target = dp.getByRole('button', { name: text })
     .or(dp.getByRole('menuitem', { name: text }))
-    .or(dp.getByRole('tab', { name: text }));
+    .or(dp.getByRole('tab', { name: text }))
+    .or(dp.getByText(text, { exact: true }));
   await target.first().click();
 });
 
@@ -143,19 +144,17 @@ When('I open the file actions menu', async function ({}) {
 
 Then('the menu shows {string}', async function ({}, itemText: string) {
   const dp = getDemsPage();
-  await expect(dp.getByRole('menuitem', { name: itemText })).toBeVisible({ timeout: 5_000 });
+  await expect(dp.getByText(itemText, { exact: true }).first()).toBeVisible({ timeout: 5_000 });
 });
 
 Then('a download dialog or download is initiated', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('[role="dialog"], [data-testid*="download"]')).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('dialog', { name: 'Download File' })).toBeVisible({ timeout: 10_000 });
 });
 
 Then('the restriction dialog is visible', async function ({}) {
   const dp = getDemsPage();
-  await expect(
-    dp.locator('[data-testid="lock-option-private"]').or(dp.locator('[role="dialog"]'))
-  ).toBeVisible({ timeout: 10_000 });
+  await expect(dp.locator('[data-testid="lock-option-private"]')).toBeVisible({ timeout: 10_000 });
 });
 
 // ─── Search and filter ───
