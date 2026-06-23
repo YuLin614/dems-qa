@@ -178,9 +178,7 @@ Then('the file list shows at least 1 result', async function ({}) {
 
 Then('the file list shows no results', async function ({}) {
   const dp = getDemsPage();
-  const rowCount = await dp.locator('tbody tr').count();
-  const hasEmptyState = await dp.getByText(/no results|no files|0 items/i).isVisible({ timeout: 5_000 }).catch(() => false);
-  expect(rowCount === 0 || hasEmptyState).toBeTruthy();
+  await expect(dp.locator('tbody tr')).toHaveCount(0, { timeout: 10_000 });
 });
 
 Then('the results contain {string}', async function ({}, text: string) {

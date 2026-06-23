@@ -13,3 +13,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 docs/superpowers/plans/briefs/
+
+# Generated BDD
+.features-gen/
+.features-gen-rms/
