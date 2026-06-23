@@ -1,0 +1,22 @@
+@rms
+Feature: File actions in DEMS integration mode
+
+  Background:
+    Given I have opened DEMS integration from RMS record "PP 2026-12300"
+    And I have opened the file "197483-905015011_medium.mp4"
+
+  Scenario: Actions menu shows all options
+    When I open the file actions menu
+    Then the menu shows "Manage Restriction"
+    And the menu shows "Download"
+    And the menu shows "Share"
+
+  Scenario: Download initiates a file download
+    When I open the file actions menu
+    And I click "Download"
+    Then a download dialog or download is initiated
+
+  Scenario: Manage Restriction opens restriction dialog
+    When I open the file actions menu
+    And I click "Manage Restriction"
+    Then the restriction dialog is visible
