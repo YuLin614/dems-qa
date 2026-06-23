@@ -7,7 +7,7 @@ Feature: File actions in DEMS integration mode
 
   Scenario: Actions menu shows all options
     When I open the file actions menu
-    Then the menu shows "Manage Restriction"
+    Then the menu shows "Restrict"
     And the menu shows "Download"
     And the menu shows "Share"
 
@@ -16,7 +16,7 @@ Feature: File actions in DEMS integration mode
     And I click "Download"
     Then a download dialog or download is initiated
 
-  Scenario: Manage Restriction opens restriction dialog
+  Scenario: Restrict opens restriction dialog
     When I open the file actions menu
-    And I click "Manage Restriction"
+    And I click "Restrict"
     Then the restriction dialog is visible
