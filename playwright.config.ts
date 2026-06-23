@@ -25,7 +25,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   projects: [
-    { name: 'setup', testDir: 'setup', testMatch: /auth\.setup\.ts/ },
+    { name: 'setup', testDir: 'setup', testMatch: /(?<!rms-)auth\.setup\.ts/ },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
