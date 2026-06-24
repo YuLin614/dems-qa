@@ -256,7 +256,8 @@ When('I select restriction {string}', async function ({}, option: string) {
 
 When('I enter restriction reason {string}', async function ({}, reason: string) {
   const dp = getDemsPage();
-  await dp.locator('#restrict-reason').fill(reason);
+  // File-level dialog uses #restrict-reason; bulk dialog uses a plain textarea
+  await dp.locator('#restrict-reason, textarea').first().fill(reason);
 });
 
 When('I confirm the restriction', async function ({}) {
