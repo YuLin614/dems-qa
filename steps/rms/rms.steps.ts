@@ -281,6 +281,7 @@ Then('the file has a Private badge', async function ({}) {
   // Use regex to match "Private" anywhere in dialog (breadcrumb chip or Lock Status label)
   await expect(dp.getByRole('dialog').getByText(/Private/).first()).toBeVisible({ timeout: 10_000 });
   await dp.keyboard.press('Escape');
+  await dp.waitForTimeout(800); // wait for dialog close animation before next step
 });
 
 Then('the Private badge is gone', async function ({}) {
