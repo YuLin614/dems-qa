@@ -268,8 +268,15 @@ When('I confirm the restriction', async function ({}) {
 
 Then('the file has a Private badge', async function ({}) {
   const dp = getDemsPage();
-  // Restrict Access modal confirmed closed — restriction submitted
-  await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 5_000 });
+  // Reopen the first file and verify lock status shows Private in info panel
+  await dp.keyboard.press('Escape');
+  await dp.getByRole('row').nth(1).click();
+  await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
+  await expect(
+    dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')
+      .or(dp.getByRole('dialog').getByText('Private', { exact: true }).first())
+  ).toBeVisible({ timeout: 10_000 });
+  await dp.keyboard.press('Escape');
 });
 
 Then('the Private badge is gone', async function ({}) {
