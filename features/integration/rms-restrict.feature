@@ -21,6 +21,9 @@ Feature: Restrict access in DEMS integration mode
     And I enter restriction reason "test"
     And I confirm the restriction
     Then the file has a Private badge
+    When I open the file actions menu
+    Then the menu shows "Manage Restriction"
+    And the menu does not show "Restrict"
 
   Scenario: Remove restriction
     When I open the file actions menu

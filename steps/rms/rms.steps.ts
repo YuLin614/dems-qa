@@ -152,6 +152,11 @@ Then('the menu shows {string}', async function ({}, itemText: string) {
   await expect(dp.getByText(itemText, { exact: true }).first()).toBeVisible({ timeout: 5_000 });
 });
 
+Then('the menu does not show {string}', async function ({}, itemText: string) {
+  const dp = getDemsPage();
+  await expect(dp.getByText(itemText, { exact: true })).not.toBeVisible({ timeout: 5_000 });
+});
+
 Then('a download dialog or download is initiated', async function ({}) {
   const dp = getDemsPage();
   await expect(dp.getByRole('dialog', { name: 'Download File' })).toBeVisible({ timeout: 10_000 });
