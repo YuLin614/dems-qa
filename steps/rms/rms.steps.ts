@@ -162,6 +162,24 @@ Then('the restriction dialog is visible', async function ({}) {
   await expect(dp.getByText('Restrict Access')).toBeVisible({ timeout: 10_000 });
 });
 
+When('I enter download reason {string}', async function ({}, reason: string) {
+  const dp = getDemsPage();
+  const dialog = dp.getByRole('dialog', { name: 'Download File' });
+  await dialog.locator('[placeholder="Enter reason..."]').fill(reason);
+});
+
+When('I confirm the download', async function ({}) {
+  const dp = getDemsPage();
+  const dialog = dp.getByRole('dialog', { name: 'Download File' });
+  await dialog.getByRole('button', { name: /^Download$/i }).click();
+});
+
+Then('the file downloads successfully', async function ({}) {
+  const dp = getDemsPage();
+  // Download File dialog closes on successful download
+  await expect(dp.getByRole('dialog', { name: 'Download File' })).not.toBeVisible({ timeout: 15_000 });
+});
+
 // ─── Search and filter ───
 
 When('I search for {string}', async function ({}, term: string) {

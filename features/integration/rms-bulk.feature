@@ -17,6 +17,9 @@ Feature: Bulk operations in DEMS integration mode
     When I select the first file
     And I click bulk "Download"
     Then a download dialog or download is initiated
+    When I enter download reason "QA bulk download"
+    And I confirm the download
+    Then the file downloads successfully
 
   Scenario: Bulk share files
     When I select the first file

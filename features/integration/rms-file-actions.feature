@@ -11,10 +11,13 @@ Feature: File actions in DEMS integration mode
     And the menu shows "Download"
     And the menu shows "Share"
 
-  Scenario: Download initiates a file download
+  Scenario: Download file
     When I open the file actions menu
     And I click "Download"
     Then a download dialog or download is initiated
+    When I enter download reason "QA test download"
+    And I confirm the download
+    Then the file downloads successfully
 
   Scenario: Restrict opens restriction dialog
     When I open the file actions menu
