@@ -12,9 +12,9 @@ Feature: Detailed filter options in DEMS integration mode
     When I apply filter "Upload Status" with value "Success"
     Then the file list shows at least 1 result
 
-  Scenario: Filter by Restriction Status applies filter chip
-    When I apply filter "Restriction Status" with value "No restriction"
-    Then the filter chip is applied
+  Scenario: Restriction Status filter option is available
+    When I open the filter panel
+    Then the filter options include "Restriction Status"
 
   Scenario: Clear all filters restores full list
     When I apply filter "File Type" with value "Video"

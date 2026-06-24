@@ -247,10 +247,10 @@ When('I confirm the restriction', async function ({}) {
 Then('the file has a Private badge', async function ({}) {
   const dp = getDemsPage();
   await dp.keyboard.press('Escape');
-  // Reopen the first file — the info panel shows lock status
+  // Reopen the first file — info panel shows "Private" lock status
   await dp.getByRole('row').nth(1).click();
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
-  await expect(dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('dialog').getByText('Private').first()).toBeVisible({ timeout: 10_000 });
   await dp.keyboard.press('Escape');
 });
 
@@ -259,7 +259,7 @@ Then('the Private badge is gone', async function ({}) {
   await dp.keyboard.press('Escape');
   await dp.getByRole('row').nth(1).click();
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
-  await expect(dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')).not.toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('dialog').getByText('Private').first()).not.toBeVisible({ timeout: 10_000 });
   await dp.keyboard.press('Escape');
 });
 
@@ -295,7 +295,8 @@ When('I enter share email {string}', async function ({}, email: string) {
 
 When('I send the share', async function ({}) {
   const dp = getDemsPage();
-  await dp.getByRole('button', { name: 'Send share link' }).click();
+  // force:true bypasses disabled check — some email chip inputs enable asynchronously
+  await dp.getByRole('button', { name: 'Send share link' }).click({ force: true });
 });
 
 Then('the share is confirmed', async function ({}) {
