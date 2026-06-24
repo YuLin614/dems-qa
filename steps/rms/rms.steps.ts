@@ -370,6 +370,20 @@ When('I apply date filter {string} from {string} to {string}', async function ({
   await dp.waitForTimeout(500);
 });
 
+When('I apply filter {string} with first available value', async function ({}, filterType: string) {
+  const dp = getDemsPage();
+  await dp.locator('[data-testid="file-table:filter-chip-bar"] button').first().click();
+  await dp.waitForSelector('text=FILTER BY', { timeout: 5_000 });
+  await dp.locator(`[aria-label="Add filter: ${filterType}"]`).click();
+  await dp.waitForTimeout(300);
+  await dp.getByText('pick a value').first().click();
+  await dp.waitForTimeout(300);
+  // Click first available option — fails if dropdown empty (surfaces data issue)
+  await dp.getByRole('option').first().click({ timeout: 5_000 });
+  await dp.keyboard.press('Escape');
+  await dp.waitForTimeout(500);
+});
+
 Then('the filter chip is applied', async function ({}) {
   const dp = getDemsPage();
   await expect(dp.locator('[data-testid="filter-badge"]').first()).toBeVisible({ timeout: 5_000 });

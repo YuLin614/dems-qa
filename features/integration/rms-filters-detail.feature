@@ -32,6 +32,14 @@ Feature: Detailed filter options in DEMS integration mode
     When I apply date filter "Captured Date" from "2026-01-01" to "2026-12-31"
     Then the file list shows at least 1 result
 
+  Scenario: Filter by Incident returns results
+    When I apply filter "Incident" with first available value
+    Then the file list shows at least 1 result
+
+  Scenario: Filter by Source returns results
+    When I apply filter "Source" with first available value
+    Then the file list shows at least 1 result
+
   Scenario: Restriction Status filter option is available
     When I open the filter panel
     Then the filter options include "Restriction Status"
