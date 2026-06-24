@@ -269,14 +269,12 @@ When('I confirm the restriction', async function ({}) {
 
 Then('the file has a Private badge', async function ({}) {
   const dp = getDemsPage();
-  // Reopen the first file and verify lock status shows Private in info panel
+  // Reopen the first file — Private badge appears in breadcrumb or Lock Status panel
   await dp.keyboard.press('Escape');
   await dp.getByRole('row').nth(1).click();
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
-  await expect(
-    dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')
-      .or(dp.getByRole('dialog').getByText('Private', { exact: true }).first())
-  ).toBeVisible({ timeout: 10_000 });
+  // Use regex to match "Private" anywhere in dialog (breadcrumb chip or Lock Status label)
+  await expect(dp.getByRole('dialog').getByText(/Private/).first()).toBeVisible({ timeout: 10_000 });
   await dp.keyboard.press('Escape');
 });
 
@@ -285,7 +283,8 @@ Then('the Private badge is gone', async function ({}) {
   await dp.keyboard.press('Escape');
   await dp.getByRole('row').nth(1).click();
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
-  await expect(dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')).not.toBeVisible({ timeout: 10_000 });
+  // After removing restriction, neither Private badge nor Lock Status: Private should appear
+  await expect(dp.getByRole('dialog').getByText(/Private/)).not.toBeVisible({ timeout: 10_000 });
   await dp.keyboard.press('Escape');
 });
 
@@ -328,10 +327,11 @@ When('I enter share email {string}', async function ({}, email: string) {
 
 When('I enter share reason {string}', async function ({}, _reason: string) {
   const dp = getDemsPage();
-  // "Reason for sharing" is a dropdown — click it and select first available option
-  await dp.getByText('Select a reason...').click();
+  // "Reason for sharing" dropdown — use regex to avoid exact-string issues
+  await dp.getByText(/Select a reason/i).first().click();
   await dp.waitForTimeout(300);
-  await dp.getByRole('option').first().click({ timeout: 8_000 });
+  // Select "Prosecutor Review" (first available reason)
+  await dp.getByText('Prosecutor Review').first().click({ timeout: 8_000 });
   await dp.waitForTimeout(300);
 });
 

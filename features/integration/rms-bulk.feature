@@ -30,5 +30,6 @@ Feature: Bulk operations in DEMS integration mode
     And I click bulk "Share"
     Then the share dialog is visible
     When I enter share email "kloselyc+1@gmail.com"
+    And I enter share reason "Prosecutor Review"
     And I send the share
     Then the share is confirmed
