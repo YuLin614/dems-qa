@@ -345,6 +345,29 @@ When('I clear all filters', async function ({}) {
   await dp.waitForTimeout(500);
 });
 
+When('I apply date filter {string} from {string} to {string}', async function ({}, filterType: string, fromDate: string, toDate: string) {
+  const dp = getDemsPage();
+  // Open filter panel and add filter type
+  await dp.locator('[data-testid="file-table:filter-chip-bar"] button').first().click();
+  await dp.waitForSelector('text=FILTER BY', { timeout: 5_000 });
+  await dp.locator(`[aria-label="Add filter: ${filterType}"]`).click();
+  await dp.waitForTimeout(300);
+  // Close filter panel — chip is now in the bar
+  await dp.keyboard.press('Escape');
+  await dp.waitForTimeout(300);
+  // Click the filter chip to open date range editor
+  await dp.locator('[data-testid="filter-badge"]').first().click();
+  // Wait for date inputs to appear
+  await dp.locator('input[type="date"]').first().waitFor({ timeout: 5_000 });
+  await dp.locator('input[type="date"]').first().fill(fromDate);
+  await dp.waitForTimeout(300);
+  await dp.locator('input[type="date"]').nth(1).fill(toDate);
+  await dp.waitForTimeout(800);
+  // Close editor
+  await dp.keyboard.press('Escape');
+  await dp.waitForTimeout(500);
+});
+
 Then('the filter chip is applied', async function ({}) {
   const dp = getDemsPage();
   await expect(dp.locator('[data-testid="filter-badge"]').first()).toBeVisible({ timeout: 5_000 });
