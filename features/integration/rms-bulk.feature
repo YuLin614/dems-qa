@@ -16,6 +16,12 @@ Feature: Bulk operations in DEMS integration mode
     And I enter restriction reason "bulk test"
     And I confirm the restriction
     Then the restriction was applied
+    When I select the first file
+    And I click bulk "Restrict"
+    And I select restriction "No restriction"
+    And I enter restriction reason "cleanup"
+    And I confirm the restriction
+    Then the restriction was applied
 
   Scenario: Bulk download files
     When I select the first file
