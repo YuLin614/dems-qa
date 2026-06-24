@@ -234,8 +234,8 @@ When('I enter restriction reason {string}', async function ({}, reason: string) 
 
 When('I confirm the restriction', async function ({}) {
   const dp = getDemsPage();
-  // Button label varies: Privatize / Unlock / Apply depending on context
-  await dp.getByRole('button', { name: /Privatize|Unlock|Apply/i }).first().click();
+  // Click last button in dialog (submit = Privatize / Unlock / Apply; Cancel is before it)
+  await dp.getByRole('dialog').getByRole('button').last().click();
   await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 10_000 });
 });
 
@@ -276,9 +276,10 @@ Then('the share dialog is visible', async function ({}) {
 
 When('I enter share email {string}', async function ({}, email: string) {
   const dp = getDemsPage();
-  // pressSequentially triggers input events so the chip validates and enables the send button
+  // pressSequentially triggers input events; Enter confirms chip
   await dp.locator('[aria-label="Recipient emails"]').pressSequentially(email);
-  await dp.locator('[aria-label="Recipient emails"]').press('Tab');
+  await dp.locator('[aria-label="Recipient emails"]').press('Enter');
+  await dp.waitForTimeout(500); // wait for chip to render and button to enable
 });
 
 When('I send the share', async function ({}) {
@@ -320,7 +321,10 @@ When('I apply filter {string} with value {string}', async function ({}, filterTy
   // Click the specific filter type button
   await dp.locator(`[aria-label="Add filter: ${filterType}"]`).click();
   await dp.waitForTimeout(300);
-  // Select the value from the value selector
+  // Click "pick a value" chip dropdown to open the value selector
+  await dp.getByText('pick a value').first().click();
+  await dp.waitForTimeout(300);
+  // Select the value
   await dp.getByText(filterValue, { exact: false }).first().click();
   // Close the filter panel
   await dp.keyboard.press('Escape');
