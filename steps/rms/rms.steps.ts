@@ -267,9 +267,9 @@ When('I enter restriction reason {string}', async function ({}, reason: string) 
 
 When('I confirm the restriction', async function ({}) {
   const dp = getDemsPage();
-  // Scope specifically to the Restrict Access dialog to avoid other dialog buttons
+  // Scope to Restrict Access dialog; click submit by name (Unlock / Privatize / Apply)
   const restrictDialog = dp.getByRole('dialog').filter({ hasText: 'Restrict Access' });
-  await restrictDialog.getByRole('button').last().click();
+  await restrictDialog.getByRole('button', { name: /^(Unlock|Privatize|Apply)$/i }).click();
   await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 10_000 });
 });
 
