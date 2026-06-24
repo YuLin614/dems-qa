@@ -267,8 +267,9 @@ When('I enter restriction reason {string}', async function ({}, reason: string) 
 
 When('I confirm the restriction', async function ({}) {
   const dp = getDemsPage();
-  // Click last button in dialog (submit = Privatize / Unlock / Apply; Cancel is before it)
-  await dp.getByRole('dialog').getByRole('button').last().click();
+  // Scope specifically to the Restrict Access dialog to avoid other dialog buttons
+  const restrictDialog = dp.getByRole('dialog').filter({ hasText: 'Restrict Access' });
+  await restrictDialog.getByRole('button').last().click();
   await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 10_000 });
 });
 
@@ -289,7 +290,7 @@ Then('the Private badge is gone', async function ({}) {
   await dp.keyboard.press('Escape');
   await dp.getByRole('row').nth(1).click();
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
-  await expect(dp.getByRole('dialog').getByText(/Private/)).not.toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('dialog').getByText(/Private/).first()).not.toBeVisible({ timeout: 10_000 });
   // Leave dialog open — matches same pattern as the file has a Private badge step
 });
 
