@@ -27,7 +27,7 @@ Feature: Restrict access in DEMS integration mode
 
   Scenario: Remove restriction
     When I open the file actions menu
-    And I click "Restrict"
+    And I click "Manage Restriction"
     And I select restriction "No restriction"
     And I confirm the restriction
     Then the Private badge is gone

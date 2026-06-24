@@ -280,18 +280,17 @@ Then('the file has a Private badge', async function ({}) {
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
   // Use regex to match "Private" anywhere in dialog (breadcrumb chip or Lock Status label)
   await expect(dp.getByRole('dialog').getByText(/Private/).first()).toBeVisible({ timeout: 10_000 });
-  await dp.keyboard.press('Escape');
-  await dp.waitForTimeout(800); // wait for dialog close animation before next step
+  // Leave dialog open — subsequent steps (e.g. open actions menu) operate inside it
 });
 
 Then('the Private badge is gone', async function ({}) {
   const dp = getDemsPage();
+  // Reopen the first file to verify restriction was removed
   await dp.keyboard.press('Escape');
   await dp.getByRole('row').nth(1).click();
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
-  // After removing restriction, neither Private badge nor Lock Status: Private should appear
   await expect(dp.getByRole('dialog').getByText(/Private/)).not.toBeVisible({ timeout: 10_000 });
-  await dp.keyboard.press('Escape');
+  // Leave dialog open — matches same pattern as the file has a Private badge step
 });
 
 Then('the restriction was applied', async function ({}) {
