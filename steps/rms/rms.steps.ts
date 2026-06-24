@@ -317,21 +317,28 @@ When('I enter share email {string}', async function ({}, email: string) {
   const dp = getDemsPage();
   await dp.locator('[aria-label="Recipient emails"]').fill(email);
   await dp.waitForTimeout(300);
-  await dp.locator('[aria-label="Recipient emails"]').press('Enter');
-  await dp.waitForTimeout(2_000); // wait for chip validation and button to enable
+  // Blur confirms the email chip (blur event triggers addRecipient in the React component)
+  await dp.locator('[aria-label="Recipient emails"]').blur();
+  await dp.waitForTimeout(500);
+});
+
+When('I enter share reason {string}', async function ({}, reason: string) {
+  const dp = getDemsPage();
+  // Share dialog has a Reason field required before sending
+  await dp.locator('[placeholder="Enter reason..."]').fill(reason);
+  await dp.waitForTimeout(300);
 });
 
 When('I send the share', async function ({}) {
   const dp = getDemsPage();
-  // force:true bypasses disabled check — some email chip inputs enable asynchronously
-  await dp.getByRole('button', { name: 'Send share link' }).click({ force: true });
+  // Button enabled once email chip + reason are both filled
+  await dp.getByRole('button', { name: 'Send share link' }).click();
 });
 
 Then('the share is confirmed', async function ({}) {
   const dp = getDemsPage();
-  // Verify email field accepted the input (chip creation depends on DEMS validation)
-  await expect(dp.locator('[aria-label="Recipient emails"]')).toBeVisible({ timeout: 5_000 });
-  await dp.keyboard.press('Escape');
+  // Share evidence dialog closes on successful send
+  await expect(dp.getByText('Share evidence')).not.toBeVisible({ timeout: 15_000 });
 });
 
 // ─── Audit log ───

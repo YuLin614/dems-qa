@@ -14,5 +14,6 @@ Feature: Share files in DEMS integration mode
     When I open the file actions menu
     And I click "Share"
     And I enter share email "kloselyc+1@gmail.com"
+    And I enter share reason "QA test share"
     And I send the share
     Then the share is confirmed

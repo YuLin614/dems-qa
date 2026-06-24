@@ -29,3 +29,7 @@ Feature: Bulk operations in DEMS integration mode
     When I select the first file
     And I click bulk "Share"
     Then the share dialog is visible
+    When I enter share email "kloselyc+1@gmail.com"
+    And I enter share reason "QA bulk share"
+    And I send the share
+    Then the share is confirmed
