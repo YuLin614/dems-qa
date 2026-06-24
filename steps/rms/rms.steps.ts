@@ -132,7 +132,12 @@ Then('the uploaded by field is displayed', async function ({}) {
 
 Then('the Notes section shows {string}', async function ({}, text: string) {
   const dp = getDemsPage();
-  await expect(dp.locator('[data-testid="notes:section"]').getByText(text)).toBeVisible({ timeout: 10_000 });
+  await expect(dp.locator('[data-testid="notes:section"]').getByText(text).first()).toBeVisible({ timeout: 10_000 });
+});
+
+Then('the Notes section is visible', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.locator('[data-testid="notes:section"]')).toBeVisible({ timeout: 10_000 });
 });
 
 // ─── File actions ───
@@ -241,15 +246,21 @@ When('I confirm the restriction', async function ({}) {
 
 Then('the file has a Private badge', async function ({}) {
   const dp = getDemsPage();
-  // Close the file detail dialog to see the file list badges
   await dp.keyboard.press('Escape');
-  await expect(dp.locator('[data-testid="lock-badge-private"]').first()).toBeVisible({ timeout: 10_000 });
+  // Reopen the first file — the info panel shows lock status
+  await dp.getByRole('row').nth(1).click();
+  await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
+  await expect(dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')).toBeVisible({ timeout: 10_000 });
+  await dp.keyboard.press('Escape');
 });
 
 Then('the Private badge is gone', async function ({}) {
   const dp = getDemsPage();
   await dp.keyboard.press('Escape');
-  await expect(dp.locator('[data-testid="lock-badge-private"]').first()).not.toBeVisible({ timeout: 10_000 });
+  await dp.getByRole('row').nth(1).click();
+  await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
+  await expect(dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')).not.toBeVisible({ timeout: 10_000 });
+  await dp.keyboard.press('Escape');
 });
 
 // ─── Notes ───
@@ -264,7 +275,7 @@ When('I add a note {string}', async function ({}, noteText: string) {
 
 Then('the note {string} is visible', async function ({}, noteText: string) {
   const dp = getDemsPage();
-  await expect(dp.locator('[data-testid="notes:section"]').getByText(noteText, { exact: false })).toBeVisible({ timeout: 10_000 });
+  await expect(dp.locator('[data-testid="notes:section"]').getByText(noteText, { exact: false }).first()).toBeVisible({ timeout: 10_000 });
 });
 
 // ─── Sharing ───
@@ -276,10 +287,10 @@ Then('the share dialog is visible', async function ({}) {
 
 When('I enter share email {string}', async function ({}, email: string) {
   const dp = getDemsPage();
-  // pressSequentially triggers input events; Enter confirms chip
-  await dp.locator('[aria-label="Recipient emails"]').pressSequentially(email);
+  await dp.locator('[aria-label="Recipient emails"]').fill(email);
+  await dp.waitForTimeout(300);
   await dp.locator('[aria-label="Recipient emails"]').press('Enter');
-  await dp.waitForTimeout(500); // wait for chip to render and button to enable
+  await dp.waitForTimeout(2_000); // wait for chip validation and button to enable
 });
 
 When('I send the share', async function ({}) {
@@ -333,10 +344,15 @@ When('I apply filter {string} with value {string}', async function ({}, filterTy
 
 When('I clear all filters', async function ({}) {
   const dp = getDemsPage();
-  await dp.getByText('Clear all')
-    .or(dp.getByRole('button', { name: /clear all/i }))
+  await dp.getByText('Reset filters')
+    .or(dp.getByRole('button', { name: /reset filters/i }))
     .first().click();
   await dp.waitForTimeout(500);
+});
+
+Then('the filter chip is applied', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.locator('[data-testid="filter-badge"]').first()).toBeVisible({ timeout: 5_000 });
 });
 
 // ─── Bulk operations ───

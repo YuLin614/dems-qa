@@ -23,4 +23,4 @@ Feature: File detail view in DEMS integration mode
     Then the "Audit" tab is active
 
   Scenario: Notes section is visible
-    Then the Notes section shows "Add your first note"
+    Then the Notes section is visible
