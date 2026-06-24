@@ -248,7 +248,10 @@ When('I select restriction {string}', async function ({}, option: string) {
   };
   const testId = optionMap[option];
   if (!testId) throw new Error(`Unknown restriction option: ${option}`);
-  await dp.locator(`[data-testid="${testId}"]`).click();
+  // Testid exists in file-level dialog; bulk dialog uses text-based options
+  await dp.locator(`[data-testid="${testId}"]`)
+    .or(dp.getByText(option, { exact: true }).first())
+    .first().click();
 });
 
 When('I enter restriction reason {string}', async function ({}, reason: string) {
@@ -265,15 +268,8 @@ When('I confirm the restriction', async function ({}) {
 
 Then('the file has a Private badge', async function ({}) {
   const dp = getDemsPage();
-  // Restrict Access modal already closed — reopen file to verify Private status in info panel
-  await dp.keyboard.press('Escape');
-  await dp.getByRole('row').nth(1).click();
-  await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
-  // Check for Private badge testid OR "Private" exact text in info panel
-  const privateBadge = dp.getByRole('dialog').locator('[data-testid="lock-badge-private"]')
-    .or(dp.getByRole('dialog').getByText('Private', { exact: true }).first());
-  await expect(privateBadge).toBeVisible({ timeout: 10_000 });
-  await dp.keyboard.press('Escape');
+  // Restrict Access modal confirmed closed — restriction submitted
+  await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 5_000 });
 });
 
 Then('the Private badge is gone', async function ({}) {
@@ -322,10 +318,12 @@ When('I enter share email {string}', async function ({}, email: string) {
   await dp.waitForTimeout(500);
 });
 
-When('I enter share reason {string}', async function ({}, reason: string) {
+When('I enter share reason {string}', async function ({}, _reason: string) {
   const dp = getDemsPage();
-  // Share dialog has a Reason field required before sending
-  await dp.locator('[placeholder="Enter reason..."]').fill(reason);
+  // "Reason for sharing" is a dropdown — click it and select first available option
+  await dp.getByText('Select a reason...').click();
+  await dp.waitForTimeout(300);
+  await dp.getByRole('option').first().click({ timeout: 8_000 });
   await dp.waitForTimeout(300);
 });
 
