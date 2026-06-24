@@ -197,3 +197,159 @@ Then('the filter options include {string}', async function ({}, option: string) 
   const dp = getDemsPage();
   await expect(dp.getByText(option).first()).toBeVisible({ timeout: 5_000 });
 });
+
+// ─── Restrict Access ───
+
+Then('the Restrict Access modal is visible', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.getByText('Restrict Access')).toBeVisible({ timeout: 10_000 });
+});
+
+Then('the modal shows {string} option', async function ({}, option: string) {
+  const dp = getDemsPage();
+  await expect(dp.getByText(option, { exact: false }).first()).toBeVisible({ timeout: 5_000 });
+});
+
+Then('the reason field is visible', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.locator('#restrict-reason')).toBeVisible({ timeout: 5_000 });
+});
+
+When('I select restriction {string}', async function ({}, option: string) {
+  const dp = getDemsPage();
+  const optionMap: Record<string, string> = {
+    'No restriction': 'lock-option-unlock',
+    'Privatized': 'lock-option-private',
+    'Invisible': 'lock-option-invisible',
+  };
+  const testId = optionMap[option];
+  if (!testId) throw new Error(`Unknown restriction option: ${option}`);
+  await dp.locator(`[data-testid="${testId}"]`).click();
+});
+
+When('I enter restriction reason {string}', async function ({}, reason: string) {
+  const dp = getDemsPage();
+  await dp.locator('#restrict-reason').fill(reason);
+});
+
+When('I confirm the restriction', async function ({}) {
+  const dp = getDemsPage();
+  // Click Lock or Unlock button — whichever is present for the current state
+  const lockBtn = dp.getByRole('button', { name: 'Lock' });
+  const unlockBtn = dp.getByRole('button', { name: 'Unlock' });
+  await lockBtn.or(unlockBtn).first().click();
+  // Wait for the Restrict Access modal to close
+  await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 10_000 });
+});
+
+Then('the file has a Private badge', async function ({}) {
+  const dp = getDemsPage();
+  // Close the file detail dialog to see the file list badges
+  await dp.keyboard.press('Escape');
+  await expect(dp.locator('[data-testid="lock-badge-private"]').first()).toBeVisible({ timeout: 10_000 });
+});
+
+Then('the Private badge is gone', async function ({}) {
+  const dp = getDemsPage();
+  await dp.keyboard.press('Escape');
+  await expect(dp.locator('[data-testid="lock-badge-private"]').first()).not.toBeVisible({ timeout: 10_000 });
+});
+
+// ─── Notes ───
+
+When('I add a note {string}', async function ({}, noteText: string) {
+  const dp = getDemsPage();
+  await dp.getByText(/\+ Add (a|your first) note/i).first().click();
+  await dp.locator('[aria-label="New note"]').fill(noteText);
+  await dp.locator('[title="Save note"]').click();
+  await expect(dp.locator('[aria-label="New note"]')).not.toBeVisible({ timeout: 10_000 });
+});
+
+Then('the note {string} is visible', async function ({}, noteText: string) {
+  const dp = getDemsPage();
+  await expect(dp.locator('[data-testid="notes:section"]').getByText(noteText, { exact: false })).toBeVisible({ timeout: 10_000 });
+});
+
+// ─── Sharing ───
+
+Then('the share dialog is visible', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.getByText('Share evidence')).toBeVisible({ timeout: 10_000 });
+});
+
+When('I enter share email {string}', async function ({}, email: string) {
+  const dp = getDemsPage();
+  await dp.locator('[aria-label="Recipient emails"]').fill(email);
+  await dp.locator('[aria-label="Recipient emails"]').press('Enter');
+});
+
+When('I send the share', async function ({}) {
+  const dp = getDemsPage();
+  await dp.getByRole('button', { name: 'Send share link' }).click();
+});
+
+Then('the share is confirmed', async function ({}) {
+  const dp = getDemsPage();
+  // Dialog closes on success
+  await expect(dp.getByText('Share evidence')).not.toBeVisible({ timeout: 15_000 });
+});
+
+// ─── Audit log ───
+
+Then('the audit log has at least 1 entry', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.getByRole('row').nth(1)).toBeVisible({ timeout: 10_000 });
+});
+
+When('I open the full audit log', async function ({}) {
+  const dp = getDemsPage();
+  await dp.getByText('View full log').first().click();
+});
+
+Then('the full audit log is visible', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.getByText('Full audit log')).toBeVisible({ timeout: 10_000 });
+});
+
+// ─── Detailed filters ───
+
+When('I apply filter {string} with value {string}', async function ({}, filterType: string, filterValue: string) {
+  const dp = getDemsPage();
+  // Open the filter panel
+  await dp.locator('[aria-label="Filter by"]').click();
+  await dp.locator('[role="dialog"][aria-label="Filter by"]').waitFor({ timeout: 5_000 });
+  // Click the specific filter type button
+  await dp.locator(`[aria-label="Add filter: ${filterType}"]`).click();
+  await dp.waitForTimeout(300);
+  // Select the value from the value selector
+  await dp.getByText(filterValue, { exact: false }).first().click();
+  // Close the filter panel
+  await dp.keyboard.press('Escape');
+  await dp.waitForTimeout(500);
+});
+
+When('I clear all filters', async function ({}) {
+  const dp = getDemsPage();
+  await dp.getByText('Clear all')
+    .or(dp.getByRole('button', { name: /clear all/i }))
+    .first().click();
+  await dp.waitForTimeout(500);
+});
+
+// ─── Bulk operations ───
+
+When('I select the first file', async function ({}) {
+  const dp = getDemsPage();
+  await dp.locator('[aria-label="Select row"]').first().click();
+  await dp.locator('[data-testid="bulk-toolbar"]').waitFor({ timeout: 5_000 });
+});
+
+Then('the bulk toolbar is visible', async function ({}) {
+  const dp = getDemsPage();
+  await expect(dp.locator('[data-testid="bulk-toolbar"]')).toBeVisible({ timeout: 5_000 });
+});
+
+When('I click bulk {string}', async function ({}, buttonText: string) {
+  const dp = getDemsPage();
+  await dp.locator('[data-testid="bulk-toolbar"]').getByText(buttonText, { exact: true }).click();
+});
