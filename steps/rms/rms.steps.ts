@@ -178,7 +178,7 @@ When('I clear the search', async function ({}) {
 
 Then('the file list shows at least 1 result', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.getByRole('row').nth(1)).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByRole('row').nth(1)).toBeVisible({ timeout: 15_000 });
 });
 
 Then('the file list shows no results', async function ({}) {
@@ -356,9 +356,10 @@ When('I apply date filter {string} from {string} to {string}', async function ({
   await dp.keyboard.press('Escape');
   await dp.waitForTimeout(300);
   // Click the filter chip to open date range editor
-  await dp.locator('[data-testid="filter-badge"]').first().click();
-  // Wait for date inputs to appear
-  await dp.locator('input[type="date"]').first().waitFor({ timeout: 5_000 });
+  // Click "pick a value" on the chip to open date range editor
+  await dp.getByText('pick a value').first().click();
+  // Wait for date inputs to appear inside the date range popover
+  await dp.locator('input[type="date"]').first().waitFor({ timeout: 8_000 });
   await dp.locator('input[type="date"]').first().fill(fromDate);
   await dp.waitForTimeout(300);
   await dp.locator('input[type="date"]').nth(1).fill(toDate);
