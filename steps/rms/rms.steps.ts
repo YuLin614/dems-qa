@@ -154,7 +154,7 @@ Then('a download dialog or download is initiated', async function ({}) {
 
 Then('the restriction dialog is visible', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.locator('[data-testid="lock-option-private"]')).toBeVisible({ timeout: 10_000 });
+  await expect(dp.getByText('Restrict Access')).toBeVisible({ timeout: 10_000 });
 });
 
 // ─── Search and filter ───
@@ -234,11 +234,8 @@ When('I enter restriction reason {string}', async function ({}, reason: string) 
 
 When('I confirm the restriction', async function ({}) {
   const dp = getDemsPage();
-  // Click Lock or Unlock button — whichever is present for the current state
-  const lockBtn = dp.getByRole('button', { name: 'Lock' });
-  const unlockBtn = dp.getByRole('button', { name: 'Unlock' });
-  await lockBtn.or(unlockBtn).first().click();
-  // Wait for the Restrict Access modal to close
+  // Button label varies: Privatize / Unlock / Apply depending on context
+  await dp.getByRole('button', { name: /Privatize|Unlock|Apply/i }).first().click();
   await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 10_000 });
 });
 
@@ -261,7 +258,7 @@ When('I add a note {string}', async function ({}, noteText: string) {
   const dp = getDemsPage();
   await dp.getByText(/\+ Add (a|your first) note/i).first().click();
   await dp.locator('[aria-label="New note"]').fill(noteText);
-  await dp.locator('[title="Save note"]').click();
+  await dp.getByRole('button', { name: 'Save note' }).click();
   await expect(dp.locator('[aria-label="New note"]')).not.toBeVisible({ timeout: 10_000 });
 });
 
@@ -279,8 +276,9 @@ Then('the share dialog is visible', async function ({}) {
 
 When('I enter share email {string}', async function ({}, email: string) {
   const dp = getDemsPage();
-  await dp.locator('[aria-label="Recipient emails"]').fill(email);
-  await dp.locator('[aria-label="Recipient emails"]').press('Enter');
+  // pressSequentially triggers input events so the chip validates and enables the send button
+  await dp.locator('[aria-label="Recipient emails"]').pressSequentially(email);
+  await dp.locator('[aria-label="Recipient emails"]').press('Tab');
 });
 
 When('I send the share', async function ({}) {
@@ -298,7 +296,8 @@ Then('the share is confirmed', async function ({}) {
 
 Then('the audit log has at least 1 entry', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.getByRole('row').nth(1)).toBeVisible({ timeout: 10_000 });
+  // Audit log renders as a list of action items, not table rows
+  await expect(dp.getByRole('dialog').getByText(/View|Upload|Download|Lock|Share/i).first()).toBeVisible({ timeout: 10_000 });
 });
 
 When('I open the full audit log', async function ({}) {
@@ -315,9 +314,9 @@ Then('the full audit log is visible', async function ({}) {
 
 When('I apply filter {string} with value {string}', async function ({}, filterType: string, filterValue: string) {
   const dp = getDemsPage();
-  // Open the filter panel
-  await dp.locator('[aria-label="Filter by"]').click();
-  await dp.locator('[role="dialog"][aria-label="Filter by"]').waitFor({ timeout: 5_000 });
+  // Open the filter panel via the funnel icon in the chip bar
+  await dp.locator('[data-testid="file-table:filter-chip-bar"] button').first().click();
+  await dp.waitForSelector('text=FILTER BY', { timeout: 5_000 });
   // Click the specific filter type button
   await dp.locator(`[aria-label="Add filter: ${filterType}"]`).click();
   await dp.waitForTimeout(300);
