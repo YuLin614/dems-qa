@@ -178,7 +178,8 @@ When('I clear the search', async function ({}) {
 
 Then('the file list shows at least 1 result', async function ({}) {
   const dp = getDemsPage();
-  await expect(dp.getByRole('row').nth(1)).toBeVisible({ timeout: 15_000 });
+  // Use total count text — more reliable than row ARIA role during filter renders
+  await expect(dp.getByText(/Total [1-9]\d* Items?/i)).toBeVisible({ timeout: 15_000 });
 });
 
 Then('the file list shows no results', async function ({}) {
