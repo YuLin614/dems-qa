@@ -12,6 +12,10 @@ Feature: Bulk operations in DEMS integration mode
     When I select the first file
     And I click bulk "Restrict"
     Then the restriction dialog is visible
+    When I select restriction "Privatized"
+    And I enter restriction reason "bulk test"
+    And I confirm the restriction
+    Then the restriction was applied
 
   Scenario: Bulk download files
     When I select the first file
