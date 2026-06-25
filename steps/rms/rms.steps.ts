@@ -288,11 +288,11 @@ Then('the file has a Private badge', async function ({}) {
 
 Then('the Private badge is gone', async function ({}) {
   const dp = getDemsPage();
-  // After confirm, check immediately in the open file detail dialog (no reopen needed)
-  // Wait briefly for UI to update
+  // Close stale file detail dialog; check file LIST for Private badge
+  await dp.keyboard.press('Escape');
   await dp.waitForTimeout(1_000);
-  // The file detail dialog should now show updated lock status (no Private badge)
-  await expect(dp.getByRole('dialog').getByText(/Private/).first()).not.toBeVisible({ timeout: 10_000 });
+  // File list should have no Private badge after unlocking
+  await expect(dp.locator('[data-testid="lock-badge-private"]').first()).not.toBeVisible({ timeout: 10_000 });
 });
 
 Then('the restriction was applied', async function ({}) {
