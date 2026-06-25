@@ -261,18 +261,14 @@ When('I select restriction {string}', async function ({}, option: string) {
 
 When('I enter restriction reason {string}', async function ({}, reason: string) {
   const dp = getDemsPage();
-  // Scope to Restrict Access dialog; use pressSequentially to trigger React onChange
-  const restrictDialog = dp.getByRole('dialog').filter({ hasText: 'Restrict Access' });
-  const textarea = restrictDialog.locator('#restrict-reason, textarea').first();
-  await textarea.click();
-  await textarea.pressSequentially(reason);
+  // #restrict-reason is unique to the Restrict Access modal; fallback to textarea
+  await dp.locator('#restrict-reason, textarea').first().fill(reason);
 });
 
 When('I confirm the restriction', async function ({}) {
   const dp = getDemsPage();
-  // Scope to Restrict Access dialog; click submit by name (Unlock / Privatize / Apply)
-  const restrictDialog = dp.getByRole('dialog').filter({ hasText: 'Restrict Access' });
-  await restrictDialog.getByRole('button', { name: /^(Unlock|Privatize|Apply)$/i }).click();
+  // Click last button in Restrict Access dialog (Privatize / Unlock / Apply before Cancel)
+  await dp.getByRole('dialog').filter({ hasText: 'Restrict Access' }).getByRole('button').last().click();
   await expect(dp.getByText('Restrict Access')).not.toBeVisible({ timeout: 10_000 });
 });
 
