@@ -261,8 +261,10 @@ When('I select restriction {string}', async function ({}, option: string) {
 
 When('I enter restriction reason {string}', async function ({}, reason: string) {
   const dp = getDemsPage();
-  // #restrict-reason is unique to the Restrict Access modal; fallback to textarea
-  await dp.locator('#restrict-reason, textarea').first().fill(reason);
+  // Scope to Restrict Access dialog to avoid other textareas in file detail view
+  const restrictDialog = dp.getByRole('dialog').filter({ hasText: 'Restrict Access' });
+  await restrictDialog.locator('#restrict-reason, textarea').first().fill(reason);
+  await dp.waitForTimeout(300); // wait for React controlled input to update
 });
 
 When('I confirm the restriction', async function ({}) {
