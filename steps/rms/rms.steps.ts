@@ -253,9 +253,10 @@ When('I select restriction {string}', async function ({}, option: string) {
   };
   const testId = optionMap[option];
   if (!testId) throw new Error(`Unknown restriction option: ${option}`);
-  // Testid exists in file-level dialog; bulk dialog uses text-based options
-  await dp.locator(`[data-testid="${testId}"]`)
-    .or(dp.getByText(option, { exact: true }).first())
+  // Scope to Restrict Access dialog to ensure isDirty triggers correctly
+  const restrictDialog = dp.getByRole('dialog').filter({ hasText: 'Restrict Access' });
+  await restrictDialog.locator(`[data-testid="${testId}"]`)
+    .or(restrictDialog.getByText(option, { exact: true }).first())
     .first().click();
 });
 
