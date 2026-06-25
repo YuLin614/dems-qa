@@ -261,8 +261,11 @@ When('I select restriction {string}', async function ({}, option: string) {
 
 When('I enter restriction reason {string}', async function ({}, reason: string) {
   const dp = getDemsPage();
-  // File-level dialog uses #restrict-reason; bulk dialog uses a plain textarea
-  await dp.locator('#restrict-reason, textarea').first().fill(reason);
+  // Scope to Restrict Access dialog; use pressSequentially to trigger React onChange
+  const restrictDialog = dp.getByRole('dialog').filter({ hasText: 'Restrict Access' });
+  const textarea = restrictDialog.locator('#restrict-reason, textarea').first();
+  await textarea.click();
+  await textarea.pressSequentially(reason);
 });
 
 When('I confirm the restriction', async function ({}) {
