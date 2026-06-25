@@ -287,12 +287,12 @@ Then('the file has a Private badge', async function ({}) {
 
 Then('the Private badge is gone', async function ({}) {
   const dp = getDemsPage();
-  // Reopen the first file to verify restriction was removed
+  // Wait for server to process unlock before checking
+  await dp.waitForTimeout(2_000);
   await dp.keyboard.press('Escape');
   await dp.getByRole('row').nth(1).click();
   await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
   await expect(dp.getByRole('dialog').getByText(/Private/).first()).not.toBeVisible({ timeout: 10_000 });
-  // Leave dialog open — matches same pattern as the file has a Private badge step
 });
 
 Then('the restriction was applied', async function ({}) {
