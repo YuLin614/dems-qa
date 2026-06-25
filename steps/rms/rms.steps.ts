@@ -288,11 +288,10 @@ Then('the file has a Private badge', async function ({}) {
 
 Then('the Private badge is gone', async function ({}) {
   const dp = getDemsPage();
-  // Wait for server to process unlock before checking
-  await dp.waitForTimeout(2_000);
-  await dp.keyboard.press('Escape');
-  await dp.getByRole('row').nth(1).click();
-  await dp.getByRole('dialog').waitFor({ timeout: 10_000 });
+  // After confirm, check immediately in the open file detail dialog (no reopen needed)
+  // Wait briefly for UI to update
+  await dp.waitForTimeout(1_000);
+  // The file detail dialog should now show updated lock status (no Private badge)
   await expect(dp.getByRole('dialog').getByText(/Private/).first()).not.toBeVisible({ timeout: 10_000 });
 });
 
